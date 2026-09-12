@@ -1,16 +1,13 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from auctions.dependencies import get_db_session
+from auctions.dependencies import DbSession
 from auctions.models import Buyer, Seller
 from auctions.schemas import BuyerCreate, BuyerRead, SellerCreate, SellerRead
 
 router = APIRouter(tags=["participants"])
-DbSession = Annotated[Session, Depends(get_db_session)]
 
 
 def commit_unique(session: Session, detail: str) -> None:

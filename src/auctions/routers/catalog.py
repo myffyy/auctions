@@ -1,15 +1,11 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
-from auctions.dependencies import get_db_session
+from auctions.dependencies import DbSession
 from auctions.models import Auction, Lot, Seller
 from auctions.schemas import AuctionCreate, AuctionRead, LotCreate, LotRead
 
 router = APIRouter(tags=["catalog"])
-DbSession = Annotated[Session, Depends(get_db_session)]
 
 
 @router.post("/auctions", response_model=AuctionRead, status_code=status.HTTP_201_CREATED)
