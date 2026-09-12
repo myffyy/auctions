@@ -1,4 +1,4 @@
-.PHONY: setup run test quality format verify
+.PHONY: setup run test quality format migrate verify
 
 setup:
 	uv sync --python 3.12
@@ -11,6 +11,9 @@ run:
 
 test:
 	uv run pytest
+
+migrate:
+	uv run alembic upgrade head
 
 quality:
 	uv run ruff format --check .
