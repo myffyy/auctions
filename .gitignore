@@ -1,0 +1,32 @@
+# Виртуальное окружение
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# Результаты проверок
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Переменные окружения и секреты
+.env
+.env.*
+!.env.example
+
+# Логи и резервные копии
+*.log
+backups/
+
+# Редакторы и операционная система
+.idea/
+.vscode/
+.DS_Store
