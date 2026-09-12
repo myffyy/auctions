@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from auctions.routers.catalog import router as catalog_router
 from auctions.routers.participants import router as participants_router
 
 app = FastAPI(
@@ -9,6 +10,7 @@ app = FastAPI(
 )
 
 app.include_router(participants_router)
+app.include_router(catalog_router)
 
 
 @app.get("/health", tags=["service"])
