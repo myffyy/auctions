@@ -80,6 +80,7 @@ API использует следующие основные коды ответ
 
 - `200 OK` — запрос успешно выполнен;
 - `201 Created` — сущность создана;
+- `400 Bad Request` — запрос нарушает бизнес-правило;
 - `404 Not Found` — сущность не найдена;
 - `409 Conflict` — данные конфликтуют с существующей записью;
 - `422 Unprocessable Entity` — запрос не прошёл проверку.
@@ -118,6 +119,81 @@ API использует следующие основные коды ответ
 
 Пример безопасной конфигурации находится в файле `.env.example`.
 
+## Схема данных
+
+```mermaid
+erDiagram
+    SELLERS ||--o{ LOTS : "выставляет"
+    AUCTIONS ||--o{ LOTS : "содержит"
+    LOTS ||--o| SALES : "продаётся"
+    BUYERS ||--o{ SALES : "совершает"
+    SALES ||--|| REVENUES : "формирует"
+
+    SELLERS {
+        int id PK
+        string name
+        string email UK
+        datetime created_at
+    }
+
+    BUYERS {
+        int id PK
+        string name
+        string email UK
+        datetime created_at
+    }
+
+    AUCTIONS {
+        int id PK
+        string name
+        datetime starts_at
+        datetime ends_at
+        string status
+        datetime created_at
+    }
+
+    LOTS {
+        int id PK
+        int auction_id FK
+        int seller_id FK
+        string name
+        string description
+        decimal starting_price
+        string status
+        datetime created_at
+    }
+
+    SALES {
+        int id PK
+        int lot_id FK, UK
+        int buyer_id FK
+        decimal final_price
+        datetime sold_at
+    }
+
+    REVENUES {
+        int id PK
+        int sale_id FK, UK
+        decimal commission_rate
+        decimal amount
+        datetime created_at
+    }
+```
+
+Обозначения: `PK` — первичный ключ, `FK` — внешний ключ, `UK` — уникальное значение.
+
+## Правила внесения изменений
+
+- каждое изменение выполняется в отдельной ветке, созданной от актуальной `main`;
+- функциональное изменение должно быть связано с Issue и добавлено через Pull Request;
+- перед созданием Pull Request необходимо выполнить `make verify`;
+- при изменении структуры базы данных необходимо создать миграцию и проверить её командой `make migrate`;
+- Pull Request можно объединять только после успешных проверок, просмотра изменений и выполнения критериев задачи;
+- запрещено напрямую вносить изменения в `main`, добавлять секреты и локальный файл `.env`;
+- запрещено удалять тесты, отключать анализаторы или ослаблять проверки ради успешного результата;
+- изменения в `pyproject.toml`, `uv.lock`, `Makefile`, миграциях, `.gitignore` и `.env.example` требуют отдельной внимательной проверки;
+- изменение считается готовым, когда код, тесты и документация согласованы, а обязательные проверки проходят успешно.
+
 ## Документация
 
-Назначение системы, сценарии, сущности, связи и ограничения описаны в [техническом задании](docs/technical-specification.md).
+Подробное назначение системы, пользовательские сценарии, модель данных, связи и основные ограничения приведены в [техническом задании](docs/technical-specification.md).
