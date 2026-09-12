@@ -82,3 +82,30 @@ class LotRead(LotCreate):
     id: int
     status: LotStatus
     created_at: datetime
+
+
+class SaleCreate(ApiModel):
+    lot_id: int = Field(gt=0)
+    buyer_id: int = Field(gt=0)
+    final_price: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
+class RevenueRead(ApiModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    sale_id: int
+    commission_rate: Decimal
+    amount: Decimal
+    created_at: datetime
+
+
+class SaleRead(ApiModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    lot_id: int
+    buyer_id: int
+    final_price: Decimal
+    sold_at: datetime
+    revenue: RevenueRead
