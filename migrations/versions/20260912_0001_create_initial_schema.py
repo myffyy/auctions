@@ -18,7 +18,6 @@ def upgrade() -> None:
         "sellers",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(length=200), nullable=False),
-        sa.Column("email", sa.String(length=320), nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -26,13 +25,11 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_sellers")),
-        sa.UniqueConstraint("email", name=op.f("uq_sellers_email")),
     )
     op.create_table(
         "buyers",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(length=200), nullable=False),
-        sa.Column("email", sa.String(length=320), nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -40,7 +37,6 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_buyers")),
-        sa.UniqueConstraint("email", name=op.f("uq_buyers_email")),
     )
     op.create_table(
         "auctions",

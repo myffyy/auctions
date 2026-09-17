@@ -21,12 +21,22 @@ class LotStatus(StrEnum):
     SOLD = "sold"
 
 
+class AccountRole(StrEnum):
+    ADMIN = "admin"
+    USER = "user"
+
+
+class PurchaseRequestStatus(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class Seller(Base):
     __tablename__ = "sellers"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
-    email: Mapped[str] = mapped_column(String(320), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     lots: Mapped[list[Lot]] = relationship(back_populates="seller")
@@ -37,10 +47,31 @@ class Buyer(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
-    email: Mapped[str] = mapped_column(String(320), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     sales: Mapped[list[Sale]] = relationship(back_populates="buyer")
+
+
+class Account(Base):
+    """Учётная запись для входа в веб-интерфейс."""
+
+    __tablename__ = "accounts"
+    __table_args__ = (CheckConstraint("role IN ('admin', 'user')", name="account_role"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    last_name: Mapped[str] = mapped_column(String(100))
+    first_name: Mapped[str] = mapped_column(String(100))
+    middle_name: Mapped[str] = mapped_column(String(100))
+    username: Mapped[str] = mapped_column(String(100), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(200))
+    role: Mapped[str] = mapped_column(String(20))
+    seller_id: Mapped[int | None] = mapped_column(
+        ForeignKey("sellers.id", ondelete="RESTRICT"), unique=True, nullable=True
+    )
+    buyer_id: Mapped[int | None] = mapped_column(
+        ForeignKey("buyers.id", ondelete="RESTRICT"), unique=True, nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Auction(Base):
@@ -98,6 +129,24 @@ class Sale(Base):
     lot: Mapped[Lot] = relationship(back_populates="sale")
     buyer: Mapped[Buyer] = relationship(back_populates="sales")
     revenue: Mapped[Revenue] = relationship(back_populates="sale", uselist=False)
+
+
+class PurchaseRequest(Base):
+    __tablename__ = "purchase_requests"
+    __table_args__ = (
+        CheckConstraint("offered_price > 0", name="offered_price_positive"),
+        CheckConstraint(
+            "status IN ('pending', 'approved', 'rejected')", name="purchase_request_status"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    lot_id: Mapped[int] = mapped_column(ForeignKey("lots.id", ondelete="RESTRICT"), index=True)
+    buyer_id: Mapped[int] = mapped_column(ForeignKey("buyers.id", ondelete="RESTRICT"), index=True)
+    offered_price: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    status: Mapped[str] = mapped_column(String(20), default=PurchaseRequestStatus.PENDING)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Revenue(Base):

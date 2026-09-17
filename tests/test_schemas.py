@@ -8,15 +8,9 @@ from auctions.schemas import AuctionCreate, LotCreate, SellerCreate
 
 
 def test_seller_schema_accepts_valid_data() -> None:
-    seller = SellerCreate(name="  Анна  ", email="anna@example.com")
+    seller = SellerCreate(name="  Анна  ")
 
     assert seller.name == "Анна"
-    assert seller.email == "anna@example.com"
-
-
-def test_seller_schema_rejects_invalid_email() -> None:
-    with pytest.raises(ValidationError):
-        SellerCreate(name="Анна", email="incorrect-email")
 
 
 def test_auction_schema_normalizes_time_to_utc() -> None:

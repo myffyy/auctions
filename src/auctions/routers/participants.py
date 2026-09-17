@@ -1,7 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from auctions.dependencies import DbSession
 from auctions.models import Buyer, Seller
@@ -10,21 +8,11 @@ from auctions.schemas import BuyerCreate, BuyerRead, SellerCreate, SellerRead
 router = APIRouter(tags=["participants"])
 
 
-def commit_unique(session: Session, detail: str) -> None:
-    """Сохранить изменения или сообщить о конфликте уникальности."""
-
-    try:
-        session.commit()
-    except IntegrityError as error:
-        session.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from error
-
-
 @router.post("/sellers", response_model=SellerRead, status_code=status.HTTP_201_CREATED)
 def create_seller(payload: SellerCreate, session: DbSession) -> Seller:
     seller = Seller(**payload.model_dump())
     session.add(seller)
-    commit_unique(session, "Продавец с таким email уже существует")
+    session.commit()
     session.refresh(seller)
     return seller
 
@@ -46,7 +34,7 @@ def get_seller(seller_id: int, session: DbSession) -> Seller:
 def create_buyer(payload: BuyerCreate, session: DbSession) -> Buyer:
     buyer = Buyer(**payload.model_dump())
     session.add(buyer)
-    commit_unique(session, "Покупатель с таким email уже существует")
+    session.commit()
     session.refresh(buyer)
     return buyer
 

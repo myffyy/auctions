@@ -35,6 +35,8 @@ def register_sale(
     session: Session,
     payload: SaleCreate,
     commission_rate: Decimal,
+    *,
+    commit: bool = True,
 ) -> Sale:
     """Зарегистрировать продажу и доход одной транзакцией."""
 
@@ -71,10 +73,14 @@ def register_sale(
     session.add(sale)
 
     try:
-        session.commit()
+        if commit:
+            session.commit()
+        else:
+            session.flush()
     except IntegrityError as error:
         session.rollback()
         raise LotAlreadySoldError from error
 
-    session.refresh(sale)
+    if commit:
+        session.refresh(sale)
     return sale
