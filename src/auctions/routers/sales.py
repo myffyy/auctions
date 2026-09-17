@@ -2,9 +2,10 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from auctions.auth import CurrentAccount, ensure_role
 from auctions.config import get_settings
 from auctions.dependencies import DbSession
-from auctions.models import Revenue, Sale
+from auctions.models import AccountRole, Revenue, Sale
 from auctions.schemas import RevenueRead, SaleCreate, SaleRead
 from auctions.services.sales import (
     BuyerNotFoundError,
@@ -18,7 +19,8 @@ router = APIRouter(tags=["sales"])
 
 
 @router.post("/sales", response_model=SaleRead, status_code=status.HTTP_201_CREATED)
-def create_sale(payload: SaleCreate, session: DbSession) -> Sale:
+def create_sale(payload: SaleCreate, account: CurrentAccount, session: DbSession) -> Sale:
+    ensure_role(account, AccountRole.ADMIN)
     try:
         return register_sale(session, payload, get_settings().commission_rate)
     except LotNotFoundError as error:

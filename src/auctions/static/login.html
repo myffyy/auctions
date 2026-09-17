@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Аукционы — вход</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body class="login-page">
+    <main class="login-card">
+      <p class="eyebrow">AUCTIONS</p>
+      <h1>Вход в систему</h1>
+      <p>Используйте учётную запись, созданную администратором.</p>
+      <form id="login-form">
+        <label>Логин<input name="username" required autocomplete="username"></label>
+        <label>Пароль<input name="password" type="password" required autocomplete="current-password"></label>
+        <button type="submit">Войти</button>
+      </form>
+      <p id="error" class="error" role="alert"></p>
+      <p class="hint">Первый вход: значения <code>ADMIN_USERNAME</code> и <code>ADMIN_PASSWORD</code> из <code>.env</code>.</p>
+    </main>
+    <script>
+      document.querySelector("#login-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const response = await fetch("/auth/login", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(Object.fromEntries(form))});
+        if (response.ok) window.location.assign("/app");
+        else document.querySelector("#error").textContent = (await response.json()).detail || "Не удалось войти";
+      });
+    </script>
+  </body>
+</html>

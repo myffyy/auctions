@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Аукционы</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <header><div><p class="eyebrow">AUCTIONS</p><h1>Рабочий кабинет</h1></div><div class="user"><span id="user"></span><button id="logout" class="secondary">Выйти</button></div></header>
+    <main>
+      <p id="message" class="message" role="alert"></p>
+      <section id="actions" class="actions"></section>
+      <section class="grid">
+        <article><h2>Аукционы</h2><div id="auctions"></div></article>
+        <article><h2>Лоты</h2><div id="lots"></div></article>
+        <article><h2>Заявки на покупку</h2><div id="purchase-requests"></div></article>
+        <article><h2>Продажи</h2><div id="sales"></div></article>
+        <article id="revenues-card" hidden><h2>Доходы</h2><div id="revenues"></div></article>
+        <article id="participants-card" hidden><h2>Участники</h2><div id="participants"></div></article>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

@@ -2,9 +2,9 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from auctions.models import AuctionStatus, LotStatus
+from auctions.models import AuctionStatus, LotStatus, PurchaseRequestStatus
 
 
 class ApiModel(BaseModel):
@@ -15,7 +15,6 @@ class ApiModel(BaseModel):
 
 class SellerCreate(ApiModel):
     name: str = Field(min_length=1, max_length=200)
-    email: EmailStr
 
 
 class SellerRead(SellerCreate):
@@ -27,7 +26,6 @@ class SellerRead(SellerCreate):
 
 class BuyerCreate(ApiModel):
     name: str = Field(min_length=1, max_length=200)
-    email: EmailStr
 
 
 class BuyerRead(BuyerCreate):
@@ -88,6 +86,21 @@ class SaleCreate(ApiModel):
     lot_id: int = Field(gt=0)
     buyer_id: int = Field(gt=0)
     final_price: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
+class PurchaseRequestCreate(ApiModel):
+    lot_id: int = Field(gt=0)
+    offered_price: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
+class PurchaseRequestRead(PurchaseRequestCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    buyer_id: int
+    status: PurchaseRequestStatus
+    created_at: datetime
+    reviewed_at: datetime | None
 
 
 class RevenueRead(ApiModel):

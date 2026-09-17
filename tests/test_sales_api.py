@@ -2,15 +2,26 @@ from decimal import Decimal
 
 from fastapi.testclient import TestClient
 
+from auctions.config import get_settings
+
+
+def login_as_admin(api_client: TestClient) -> None:
+    settings = get_settings()
+    response = api_client.post(
+        "/auth/login",
+        json={"username": settings.admin_username, "password": settings.admin_password},
+    )
+    assert response.status_code == 200
+
 
 def create_sale_payload(api_client: TestClient) -> tuple[dict[str, int | str], int]:
     seller_response = api_client.post(
         "/sellers",
-        json={"name": "Анна", "email": "api-sale-seller@example.com"},
+        json={"name": "Анна"},
     )
     buyer_response = api_client.post(
         "/buyers",
-        json={"name": "Борис", "email": "api-sale-buyer@example.com"},
+        json={"name": "Борис"},
     )
     auction_response = api_client.post(
         "/auctions",
@@ -41,6 +52,7 @@ def create_sale_payload(api_client: TestClient) -> tuple[dict[str, int | str], i
         "buyer_id": buyer_response.json()["id"],
         "final_price": "1250.00",
     }
+    login_as_admin(api_client)
     return payload, lot_response.json()["id"]
 
 
@@ -110,6 +122,7 @@ def test_reject_sale_with_unknown_buyer(api_client: TestClient) -> None:
 
 
 def test_reject_invalid_sale_payload(api_client: TestClient) -> None:
+    login_as_admin(api_client)
     response = api_client.post(
         "/sales",
         json={"lot_id": 0, "buyer_id": 0, "final_price": "-1.00"},

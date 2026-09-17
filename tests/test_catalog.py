@@ -14,7 +14,7 @@ def auction_payload() -> dict[str, str]:
 def create_seller(api_client: TestClient) -> int:
     response = api_client.post(
         "/sellers",
-        json={"name": "Анна", "email": "catalog-seller@example.com"},
+        json={"name": "Анна"},
     )
     assert response.status_code == 201
     return response.json()["id"]

@@ -18,8 +18,8 @@ from auctions.services.sales import (
 
 def create_sale_context(session: Session) -> tuple[Lot, Buyer]:
     starts_at = datetime(2026, 9, 12, 10, tzinfo=UTC)
-    seller = Seller(name="Анна", email="sale-seller@example.com")
-    buyer = Buyer(name="Борис", email="sale-buyer@example.com")
+    seller = Seller(name="Анна")
+    buyer = Buyer(name="Борис")
     auction = Auction(
         name="Осенний аукцион",
         starts_at=starts_at,

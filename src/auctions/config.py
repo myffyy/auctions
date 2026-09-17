@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     app_port: int = Field(default=8000, ge=1, le=65535)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     commission_rate: Decimal = Field(default=Decimal("10.00"), ge=0, le=100)
+    session_secret: str = "change-me-before-production"
+    admin_last_name: str = "Попрядухин"
+    admin_first_name: str = "Евгений"
+    admin_middle_name: str = "Романович"
+    admin_username: str = "myffy"
+    admin_password: str = "abcd1234!"
 
 
 @cache

@@ -1,0 +1,12 @@
+:root { color-scheme: light; font-family: Inter, system-ui, sans-serif; color: #172033; background: #f3f6fb; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+header { min-height: 100px; padding: 18px max(5vw, 28px); color: white; background: #172554; display: flex; justify-content: space-between; align-items: center; }
+h1, h2, h3, p { margin-top: 0; } h1 { margin-bottom: 0; } h2 { font-size: 1.12rem; } h3 { font-size: 1rem; margin-top: 18px; }
+.eyebrow { color: #93c5fd; font-size: .75rem; font-weight: 800; letter-spacing: .14em; margin-bottom: 5px; } main { max-width: 1440px; margin: 0 auto; padding: 28px; }
+.user { display: flex; align-items: center; gap: 16px; } button { border: 0; border-radius: 7px; padding: 10px 15px; background: #2563eb; color: white; font: inherit; cursor: pointer; } button:hover { background: #1d4ed8; } button.secondary { background: #334155; } button.danger { background: #b91c1c; }
+.grid, .actions { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); } .grid { margin-top: 18px; } article { padding: 20px; background: white; border: 1px solid #dbe4f0; border-radius: 10px; overflow-x: auto; box-shadow: 0 2px 7px #1725540d; }
+.form-card { min-width: 0; } form { display: grid; gap: 11px; } label { display: grid; gap: 5px; color: #334155; font-size: .9rem; } input, select { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 9px; font: inherit; background: white; }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; } th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; } th { color: #475569; } .empty, .hint { color: #64748b; } .message { min-height: 1.4em; } .success { color: #15803d; } .error { color: #b91c1c; }
+.login-page { min-height: 100vh; display: grid; place-items: center; padding: 20px; } .login-card { width: min(100%, 430px); padding: 32px; background: white; border-radius: 12px; box-shadow: 0 8px 30px #17255422; } .login-card button { margin-top: 10px; } code { font-size: .8rem; }
+@media (max-width: 620px) { header { align-items: flex-start; gap: 16px; flex-direction: column; } main { padding: 18px; } }
