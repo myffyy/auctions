@@ -11,8 +11,8 @@ def auction_payload() -> dict[str, str]:
     }
 
 
-def create_seller(api_client: TestClient) -> int:
-    response = api_client.post(
+def create_seller(admin_client: TestClient) -> int:
+    response = admin_client.post(
         "/sellers",
         json={"name": "Анна"},
     )
@@ -20,21 +20,21 @@ def create_seller(api_client: TestClient) -> int:
     return response.json()["id"]
 
 
-def create_auction(api_client: TestClient) -> int:
-    response = api_client.post("/auctions", json=auction_payload())
+def create_auction(admin_client: TestClient) -> int:
+    response = admin_client.post("/auctions", json=auction_payload())
     assert response.status_code == 201
     return response.json()["id"]
 
 
-def test_create_get_and_list_auctions(api_client: TestClient) -> None:
-    create_response = api_client.post("/auctions", json=auction_payload())
+def test_create_get_and_list_auctions(admin_client: TestClient) -> None:
+    create_response = admin_client.post("/auctions", json=auction_payload())
 
     assert create_response.status_code == 201
     auction = create_response.json()
     assert auction["status"] == "planned"
 
-    get_response = api_client.get(f"/auctions/{auction['id']}")
-    list_response = api_client.get("/auctions")
+    get_response = admin_client.get(f"/auctions/{auction['id']}")
+    list_response = admin_client.get("/auctions")
 
     assert get_response.status_code == 200
     assert get_response.json() == auction
@@ -42,16 +42,16 @@ def test_create_get_and_list_auctions(api_client: TestClient) -> None:
     assert list_response.json() == [auction]
 
 
-def test_get_unknown_auction(api_client: TestClient) -> None:
-    response = api_client.get("/auctions/999999")
+def test_get_unknown_auction(admin_client: TestClient) -> None:
+    response = admin_client.get("/auctions/999999")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Аукцион не найден"}
 
 
-def test_create_get_and_list_lots(api_client: TestClient) -> None:
-    seller_id = create_seller(api_client)
-    auction_id = create_auction(api_client)
+def test_create_get_and_list_lots(admin_client: TestClient) -> None:
+    seller_id = create_seller(admin_client)
+    auction_id = create_auction(admin_client)
     payload = {
         "auction_id": auction_id,
         "seller_id": seller_id,
@@ -60,15 +60,15 @@ def test_create_get_and_list_lots(api_client: TestClient) -> None:
         "starting_price": "1000.00",
     }
 
-    create_response = api_client.post("/lots", json=payload)
+    create_response = admin_client.post("/lots", json=payload)
 
     assert create_response.status_code == 201
     lot = create_response.json()
     assert lot["status"] == "available"
     assert Decimal(lot["starting_price"]) == Decimal("1000.00")
 
-    get_response = api_client.get(f"/lots/{lot['id']}")
-    list_response = api_client.get("/lots")
+    get_response = admin_client.get(f"/lots/{lot['id']}")
+    list_response = admin_client.get("/lots")
 
     assert get_response.status_code == 200
     assert get_response.json() == lot
@@ -76,9 +76,9 @@ def test_create_get_and_list_lots(api_client: TestClient) -> None:
     assert list_response.json() == [lot]
 
 
-def test_reject_lot_with_unknown_auction(api_client: TestClient) -> None:
-    seller_id = create_seller(api_client)
-    response = api_client.post(
+def test_reject_lot_with_unknown_auction(admin_client: TestClient) -> None:
+    seller_id = create_seller(admin_client)
+    response = admin_client.post(
         "/lots",
         json={
             "auction_id": 999999,
@@ -93,9 +93,9 @@ def test_reject_lot_with_unknown_auction(api_client: TestClient) -> None:
     assert response.json() == {"detail": "Аукцион не найден"}
 
 
-def test_reject_lot_with_unknown_seller(api_client: TestClient) -> None:
-    auction_id = create_auction(api_client)
-    response = api_client.post(
+def test_reject_lot_with_unknown_seller(admin_client: TestClient) -> None:
+    auction_id = create_auction(admin_client)
+    response = admin_client.post(
         "/lots",
         json={
             "auction_id": auction_id,
@@ -110,8 +110,8 @@ def test_reject_lot_with_unknown_seller(api_client: TestClient) -> None:
     assert response.json() == {"detail": "Продавец не найден"}
 
 
-def test_get_unknown_lot(api_client: TestClient) -> None:
-    response = api_client.get("/lots/999999")
+def test_get_unknown_lot(admin_client: TestClient) -> None:
+    response = admin_client.get("/lots/999999")
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Лот не найден"}

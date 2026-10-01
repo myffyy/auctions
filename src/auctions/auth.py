@@ -43,3 +43,8 @@ CurrentAccount = Annotated[Account, Depends(current_account)]
 def ensure_role(account: Account, *roles: AccountRole) -> None:
     if account.role not in roles:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недостаточно прав")
+
+
+def current_admin(account: CurrentAccount) -> Account:
+    ensure_role(account, AccountRole.ADMIN)
+    return account

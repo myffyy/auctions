@@ -5,25 +5,25 @@ from fastapi.testclient import TestClient
 from auctions.config import get_settings
 
 
-def login_as_admin(api_client: TestClient) -> None:
+def login_as_admin(admin_client: TestClient) -> None:
     settings = get_settings()
-    response = api_client.post(
+    response = admin_client.post(
         "/auth/login",
         json={"username": settings.admin_username, "password": settings.admin_password},
     )
     assert response.status_code == 200
 
 
-def create_sale_payload(api_client: TestClient) -> tuple[dict[str, int | str], int]:
-    seller_response = api_client.post(
+def create_sale_payload(admin_client: TestClient) -> tuple[dict[str, int | str], int]:
+    seller_response = admin_client.post(
         "/sellers",
         json={"name": "Анна"},
     )
-    buyer_response = api_client.post(
+    buyer_response = admin_client.post(
         "/buyers",
         json={"name": "Борис"},
     )
-    auction_response = api_client.post(
+    auction_response = admin_client.post(
         "/auctions",
         json={
             "name": "Осенний аукцион",
@@ -35,7 +35,7 @@ def create_sale_payload(api_client: TestClient) -> tuple[dict[str, int | str], i
     assert buyer_response.status_code == 201
     assert auction_response.status_code == 201
 
-    lot_response = api_client.post(
+    lot_response = admin_client.post(
         "/lots",
         json={
             "auction_id": auction_response.json()["id"],
@@ -52,14 +52,14 @@ def create_sale_payload(api_client: TestClient) -> tuple[dict[str, int | str], i
         "buyer_id": buyer_response.json()["id"],
         "final_price": "1250.00",
     }
-    login_as_admin(api_client)
+    login_as_admin(admin_client)
     return payload, lot_response.json()["id"]
 
 
-def test_create_and_read_sale_and_revenue(api_client: TestClient) -> None:
-    payload, lot_id = create_sale_payload(api_client)
+def test_create_and_read_sale_and_revenue(admin_client: TestClient) -> None:
+    payload, lot_id = create_sale_payload(admin_client)
 
-    create_response = api_client.post("/sales", json=payload)
+    create_response = admin_client.post("/sales", json=payload)
 
     assert create_response.status_code == 201
     sale = create_response.json()
@@ -67,11 +67,11 @@ def test_create_and_read_sale_and_revenue(api_client: TestClient) -> None:
     assert Decimal(sale["revenue"]["commission_rate"]) == Decimal("10.00")
     assert Decimal(sale["revenue"]["amount"]) == Decimal("125.00")
 
-    get_sale_response = api_client.get(f"/sales/{sale['id']}")
-    list_sales_response = api_client.get("/sales")
-    get_revenue_response = api_client.get(f"/revenues/{sale['revenue']['id']}")
-    list_revenues_response = api_client.get("/revenues")
-    get_lot_response = api_client.get(f"/lots/{lot_id}")
+    get_sale_response = admin_client.get(f"/sales/{sale['id']}")
+    list_sales_response = admin_client.get("/sales")
+    get_revenue_response = admin_client.get(f"/revenues/{sale['revenue']['id']}")
+    list_revenues_response = admin_client.get("/revenues")
+    get_lot_response = admin_client.get(f"/lots/{lot_id}")
 
     assert get_sale_response.json() == sale
     assert list_sales_response.json() == [sale]
@@ -80,50 +80,50 @@ def test_create_and_read_sale_and_revenue(api_client: TestClient) -> None:
     assert get_lot_response.json()["status"] == "sold"
 
 
-def test_reject_sale_below_starting_price(api_client: TestClient) -> None:
-    payload, _ = create_sale_payload(api_client)
+def test_reject_sale_below_starting_price(admin_client: TestClient) -> None:
+    payload, _ = create_sale_payload(admin_client)
     payload["final_price"] = "999.99"
 
-    response = api_client.post("/sales", json=payload)
+    response = admin_client.post("/sales", json=payload)
 
     assert response.status_code == 400
     assert response.json() == {"detail": "Итоговая цена ниже начальной цены лота"}
 
 
-def test_reject_repeated_sale(api_client: TestClient) -> None:
-    payload, _ = create_sale_payload(api_client)
-    first_response = api_client.post("/sales", json=payload)
+def test_reject_repeated_sale(admin_client: TestClient) -> None:
+    payload, _ = create_sale_payload(admin_client)
+    first_response = admin_client.post("/sales", json=payload)
 
-    second_response = api_client.post("/sales", json=payload)
+    second_response = admin_client.post("/sales", json=payload)
 
     assert first_response.status_code == 201
     assert second_response.status_code == 409
     assert second_response.json() == {"detail": "Лот уже продан"}
 
 
-def test_reject_sale_with_unknown_lot(api_client: TestClient) -> None:
-    payload, _ = create_sale_payload(api_client)
+def test_reject_sale_with_unknown_lot(admin_client: TestClient) -> None:
+    payload, _ = create_sale_payload(admin_client)
     payload["lot_id"] = 999999
 
-    response = api_client.post("/sales", json=payload)
+    response = admin_client.post("/sales", json=payload)
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Лот не найден"}
 
 
-def test_reject_sale_with_unknown_buyer(api_client: TestClient) -> None:
-    payload, _ = create_sale_payload(api_client)
+def test_reject_sale_with_unknown_buyer(admin_client: TestClient) -> None:
+    payload, _ = create_sale_payload(admin_client)
     payload["buyer_id"] = 999999
 
-    response = api_client.post("/sales", json=payload)
+    response = admin_client.post("/sales", json=payload)
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Покупатель не найден"}
 
 
-def test_reject_invalid_sale_payload(api_client: TestClient) -> None:
-    login_as_admin(api_client)
-    response = api_client.post(
+def test_reject_invalid_sale_payload(admin_client: TestClient) -> None:
+    login_as_admin(admin_client)
+    response = admin_client.post(
         "/sales",
         json={"lot_id": 0, "buyer_id": 0, "final_price": "-1.00"},
     )
@@ -131,9 +131,9 @@ def test_reject_invalid_sale_payload(api_client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_get_unknown_sale_and_revenue(api_client: TestClient) -> None:
-    sale_response = api_client.get("/sales/999999")
-    revenue_response = api_client.get("/revenues/999999")
+def test_get_unknown_sale_and_revenue(admin_client: TestClient) -> None:
+    sale_response = admin_client.get("/sales/999999")
+    revenue_response = admin_client.get("/revenues/999999")
 
     assert sale_response.status_code == 404
     assert sale_response.json() == {"detail": "Продажа не найдена"}
