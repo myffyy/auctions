@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from auctions.config import get_settings
 from auctions.database import engine
 from auctions.dependencies import get_db_session
 from auctions.main import app
@@ -31,3 +32,14 @@ def api_client(db_session: Session) -> Iterator[TestClient]:
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.pop(get_db_session, None)
+
+
+@pytest.fixture
+def admin_client(api_client: TestClient) -> TestClient:
+    settings = get_settings()
+    response = api_client.post(
+        "/auth/login",
+        json={"username": settings.admin_username, "password": settings.admin_password},
+    )
+    assert response.status_code == 200
+    return api_client

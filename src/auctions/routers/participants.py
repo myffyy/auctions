@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
+from auctions.auth import current_admin
 from auctions.dependencies import DbSession
 from auctions.models import Buyer, Seller
 from auctions.schemas import BuyerCreate, BuyerRead, SellerCreate, SellerRead
 
-router = APIRouter(tags=["participants"])
+router = APIRouter(tags=["participants"], dependencies=[Depends(current_admin)])
 
 
 @router.post("/sellers", response_model=SellerRead, status_code=status.HTTP_201_CREATED)
