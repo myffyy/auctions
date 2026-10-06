@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -23,6 +24,20 @@ app.include_router(participants_router)
 app.include_router(catalog_router)
 app.include_router(sales_router)
 app.include_router(web_router)
+
+
+@app.middleware("http")
+async def redirect_unauthenticated_pages(request: Request, call_next):
+    """При открытии защищённого адреса в браузере показать страницу входа."""
+
+    response = await call_next(request)
+    if (
+        request.method == "GET"
+        and response.status_code == 401
+        and "text/html" in request.headers.get("accept", "")
+    ):
+        return RedirectResponse("/login", status_code=303)
+    return response
 
 
 @app.get("/health", tags=["service"])
