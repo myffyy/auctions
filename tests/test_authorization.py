@@ -26,6 +26,13 @@ def test_anonymous_reads_denied(api_client: TestClient, path: str) -> None:
     assert api_client.get(path).status_code == 401
 
 
+@pytest.mark.parametrize("path", ["/lots", "/auctions", "/sales", "/web/lots", "/auth/me"])
+def test_anonymous_browser_navigation_redirects_to_login(api_client: TestClient, path: str) -> None:
+    response = api_client.get(path, headers={"Accept": "text/html"}, follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
+
+
 @pytest.mark.parametrize("path", ["/lots", "/auctions", "/sellers", "/buyers", "/sales"])
 def test_anonymous_writes_denied(api_client: TestClient, path: str) -> None:
     assert api_client.post(path, json={}).status_code == 401
