@@ -1,27 +1,28 @@
 .PHONY: setup run test quality format migrate verify
 
 setup:
-	uv sync --locked --python 3.12
+	uv sync --locked
 	PYTHONPATH=src uv run --locked python scripts/setup.py
 
 run:
-	uv run uvicorn auctions.main:app --app-dir src \
+	uv run --locked uvicorn auctions.main:app --app-dir src \
 		--host "$${APP_HOST:-127.0.0.1}" \
 		--port "$${APP_PORT:-8000}" \
 		--reload
 
 test:
-	uv run pytest
+	uv run --locked pytest
 
 migrate:
-	uv run alembic upgrade head
+	uv run --locked alembic upgrade head
 
 quality:
-	uv run ruff format --check .
-	uv run ruff check .
+	uv lock --check
+	uv run --locked ruff format --check .
+	uv run --locked ruff check .
 
 format:
-	uv run ruff format .
-	uv run ruff check . --fix
+	uv run --locked ruff format .
+	uv run --locked ruff check . --fix
 
 verify: quality test
