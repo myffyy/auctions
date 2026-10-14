@@ -39,6 +39,15 @@ def connect(url: URL) -> psycopg.Connection:
     )
 
 
+def administrative_url(url: URL) -> URL:
+    """Выбрать административное подключение для локальных проверок."""
+    return (
+        make_url(os.environ["SETUP_DATABASE_URL"])
+        if os.environ.get("SETUP_DATABASE_URL")
+        else url.set(username=getpass.getuser(), password=None, database="postgres")
+    )
+
+
 def prepare_database(url: URL) -> None:
     """Создать отсутствующие роль и БД; существующие данные не изменять."""
     if url.drivername != "postgresql+psycopg" or not url.database or not url.username:
@@ -52,11 +61,7 @@ def prepare_database(url: URL) -> None:
     except psycopg.OperationalError:
         pass
 
-    admin_url = (
-        make_url(os.environ["SETUP_DATABASE_URL"])
-        if os.environ.get("SETUP_DATABASE_URL")
-        else url.set(username=getpass.getuser(), password=None, database="postgres")
-    )
+    admin_url = administrative_url(url)
     with connect(admin_url) as connection:
         if (
             connection.execute(

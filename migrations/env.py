@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import Connection, engine_from_config, pool
 
 import auctions.models  # noqa: F401
 from auctions.config import get_settings
@@ -32,24 +32,34 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def configure_migrations(connection: Connection) -> None:
+    """Применить миграции через явно выбранное подключение."""
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
 def run_migrations_online() -> None:
-    """Применить миграции через подключение к базе."""
+    """Использовать переданное подключение либо настройки приложения."""
+    supplied_connection = config.attributes.get("connection")
+    if supplied_connection is not None:
+        configure_migrations(supplied_connection)
+        return
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True,
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+    try:
+        with connectable.connect() as connection:
+            configure_migrations(connection)
+    finally:
+        connectable.dispose()
 
 
 if context.is_offline_mode():
