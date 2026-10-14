@@ -37,8 +37,10 @@ def require(condition: bool, message: str) -> None:
 
 
 @contextmanager
-def temporary_database(admin: psycopg.Connection, test_url: URL) -> Iterator[Engine]:
-    name = f"auctions_migration_{uuid4().hex}_test"
+def temporary_database(
+    admin: psycopg.Connection, test_url: URL, purpose: str = "migration"
+) -> Iterator[Engine]:
+    name = f"auctions_{purpose}_{uuid4().hex}_test"
     admin.execute(
         sql.SQL("CREATE DATABASE {} OWNER {} TEMPLATE template0").format(
             sql.Identifier(name), sql.Identifier(test_url.username)
