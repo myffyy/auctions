@@ -1,8 +1,8 @@
-.PHONY: setup run test quality format migrate verify
+.PHONY: setup test-setup run test quality format migrate verify
 
 setup:
 	uv sync --locked
-	PYTHONPATH=src uv run --locked python scripts/setup.py
+	PYTHONPATH=src:. uv run --locked python scripts/setup.py
 
 run:
 	uv run --locked uvicorn auctions.main:app --app-dir src \
@@ -10,7 +10,11 @@ run:
 		--port "$${APP_PORT:-8000}" \
 		--reload
 
-test:
+test-setup:
+	uv sync --locked
+	PYTHONPATH=src:. uv run --locked python scripts/setup.py --test
+
+test: test-setup
 	uv run --locked pytest
 
 migrate:
