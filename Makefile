@@ -1,4 +1,4 @@
-.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate verify
+.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate check-migrations verify
 
 setup:
 	uv sync --locked
@@ -29,6 +29,9 @@ test-mutations:
 migrate:
 	uv run --locked alembic upgrade head
 
+check-migrations: test-setup
+	PYTHONPATH=src:. uv run --locked python scripts/check_migrations.py
+
 quality:
 	uv lock --check
 	uv run --locked ruff format --check .
@@ -44,4 +47,4 @@ format:
 	uv run --locked ruff format .
 	uv run --locked ruff check . --fix
 
-verify: quality sast test test-mutations
+verify: quality sast test test-mutations check-migrations
