@@ -15,10 +15,15 @@ function showMessage(text, isError = false) {
   message.className = isError ? "message error" : "message success";
 }
 
+function escapeHtml(value) {
+  const entities = {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"};
+  return String(value).replace(/[&<>"']/g, (character) => entities[character]);
+}
+
 function table(rows, fields) {
   if (!rows.length) return "<p class='empty'>Пока нет данных.</p>";
   const header = fields.map(([_, title]) => `<th>${title}</th>`).join("");
-  const body = rows.map((row) => `<tr>${fields.map(([key]) => `<td>${row[key] ?? "—"}</td>`).join("")}</tr>`).join("");
+  const body = rows.map((row) => `<tr>${fields.map(([key]) => `<td>${escapeHtml(row[key] ?? "—")}</td>`).join("")}</tr>`).join("");
   return `<table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
@@ -38,13 +43,15 @@ async function refresh() {
   const [auctions, lots, purchaseRequests, sales] = await Promise.all([request("/web/auctions"), request("/web/lots"), request("/web/purchase-requests"), request("/web/sales")]);
   $("#auctions").innerHTML = table(auctions, [["id", "ID"], ["name", "Название"], ["status", "Статус"]]);
   $("#lots").innerHTML = table(lots, [["id", "ID"], ["name", "Лот"], ["auction_id", "Аукцион"], ["starting_price", "Стартовая цена"], ["status", "Статус"]]);
-  const requestFields = [["id", "ID"], ["lot_id", "Лот"], ["buyer_id", "Покупатель"], ["offered_price", "Цена"], ["status", "Статус"]];
+  const requestFields = [["id", "ID"], ["lot_id", "Лот"], ["buyer_id", "Покупатель"], ["offered_price", "Цена"], ["status", "Статус"], ["rejection_reason", "Причина отклонения"]];
   $("#purchase-requests").innerHTML = table(purchaseRequests, requestFields);
   if (me.role === "admin" && purchaseRequests.length) {
+    $("#purchase-requests").querySelector("thead tr").insertAdjacentHTML("beforeend", "<th>Действия</th>");
     $("#purchase-requests").querySelectorAll("tbody tr").forEach((row, index) => {
       const item = purchaseRequests[index];
       const cell = document.createElement("td");
-      if (item.status === "pending") cell.innerHTML = `<button data-review="approve" data-id="${item.id}">Подтвердить</button> <button class="danger" data-review="reject" data-id="${item.id}">Отклонить</button>`;
+      cell.className = "review-actions";
+      if (item.status === "pending") cell.innerHTML = `<button data-review="approve" data-id="${item.id}">Подтвердить</button> <form data-reject-id="${item.id}"><label>Причина отклонения<input name="reason" maxlength="500" required placeholder="Укажите причину"></label><button class="danger" type="submit">Отклонить</button></form>`;
       row.append(cell);
     });
   }
@@ -90,6 +97,21 @@ $("#purchase-requests").addEventListener("click", async (event) => {
   try {
     await request(`/web/admin/purchase-requests/${button.dataset.id}/${button.dataset.review}`, {method: "POST"});
     showMessage(button.dataset.review === "approve" ? "Продажа подтверждена" : "Заявка отклонена");
+    await refresh();
+  } catch (error) { showMessage(error.message, true); }
+});
+
+$("#purchase-requests").addEventListener("submit", async (event) => {
+  const rejectionForm = event.target.closest("form[data-reject-id]");
+  if (!rejectionForm) return;
+  event.preventDefault();
+  const reason = rejectionForm.elements.reason.value.trim();
+  if (!reason) { showMessage("Укажите причину отклонения", true); return; }
+  try {
+    await request(`/web/admin/purchase-requests/${rejectionForm.dataset.rejectId}/reject`, {
+      method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({reason})
+    });
+    showMessage("Заявка отклонена");
     await refresh();
   } catch (error) { showMessage(error.message, true); }
 });

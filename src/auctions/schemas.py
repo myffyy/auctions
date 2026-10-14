@@ -93,6 +93,10 @@ class PurchaseRequestCreate(ApiModel):
     offered_price: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
 
 
+class PurchaseRequestReject(ApiModel):
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class PurchaseRequestRead(PurchaseRequestCreate):
     model_config = ConfigDict(from_attributes=True)
 
@@ -101,6 +105,7 @@ class PurchaseRequestRead(PurchaseRequestCreate):
     status: PurchaseRequestStatus
     created_at: datetime
     reviewed_at: datetime | None
+    rejection_reason: str | None
 
 
 class RevenueRead(ApiModel):

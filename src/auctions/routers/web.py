@@ -35,6 +35,7 @@ from auctions.schemas import (
     LotRead,
     PurchaseRequestCreate,
     PurchaseRequestRead,
+    PurchaseRequestReject,
     RevenueRead,
     SaleCreate,
     SaleRead,
@@ -378,7 +379,7 @@ def approve_purchase_request(request_id: int, account: CurrentAccount, session: 
     response_model=PurchaseRequestRead,
 )
 def reject_purchase_request(
-    request_id: int, account: CurrentAccount, session: DbSession
+    request_id: int, payload: PurchaseRequestReject, account: CurrentAccount, session: DbSession
 ) -> PurchaseRequest:
     ensure_role(account, AccountRole.ADMIN)
     purchase_request = session.scalar(
@@ -389,6 +390,7 @@ def reject_purchase_request(
     if purchase_request.status != PurchaseRequestStatus.PENDING:
         raise HTTPException(status_code=409, detail="Заявка уже рассмотрена")
     purchase_request.status = PurchaseRequestStatus.REJECTED
+    purchase_request.rejection_reason = payload.reason
     purchase_request.reviewed_at = datetime.now(UTC)
     session.commit()
     session.refresh(purchase_request)
