@@ -1,7 +1,8 @@
 .PHONY: setup run test quality format migrate verify
 
 setup:
-	uv sync --python 3.12
+	uv sync --locked --python 3.12
+	PYTHONPATH=src uv run --locked python scripts/setup.py
 
 run:
 	uv run uvicorn auctions.main:app --app-dir src \
