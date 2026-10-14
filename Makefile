@@ -1,4 +1,6 @@
-.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate check-migrations verify
+.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate check-migrations backup restore check-backup verify
+
+export BACKUP_FILE
 
 setup:
 	uv sync --locked
@@ -21,7 +23,8 @@ test: test-setup
 
 test-unit:
 	uv run --locked pytest tests/test_sales_unit.py tests/test_schemas.py \
-		tests/test_test_configuration.py tests/test_health.py --junitxml=reports/unit-tests.xml
+		tests/test_test_configuration.py tests/test_health.py tests/test_backup_commands.py \
+		--junitxml=reports/unit-tests.xml
 
 test-mutations:
 	uv run --locked python scripts/check_mutations.py
@@ -31,6 +34,15 @@ migrate:
 
 check-migrations: test-setup
 	PYTHONPATH=src:. uv run --locked python scripts/check_migrations.py
+
+backup:
+	PYTHONPATH=src:. uv run --locked python scripts/backup.py create
+
+restore:
+	PYTHONPATH=src:. uv run --locked python scripts/backup.py restore
+
+check-backup: test-setup
+	PYTHONPATH=src:. uv run --locked python scripts/check_backup.py
 
 quality:
 	uv lock --check
@@ -47,4 +59,4 @@ format:
 	uv run --locked ruff format .
 	uv run --locked ruff check . --fix
 
-verify: quality sast test test-mutations check-migrations
+verify: quality sast test test-mutations check-migrations check-backup
