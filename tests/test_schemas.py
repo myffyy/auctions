@@ -46,3 +46,60 @@ def test_lot_schema_rejects_price_with_too_many_decimal_places() -> None:
             description="Картина современного художника",
             starting_price=Decimal("1000.999"),
         )
+
+
+@pytest.mark.parametrize("name", ["", "   ", "А" * 201])
+def test_seller_schema_rejects_invalid_name(name: str) -> None:
+    with pytest.raises(ValidationError):
+        SellerCreate(name=name)
+
+
+@pytest.mark.parametrize("field", ["starts_at", "ends_at"])
+def test_auction_schema_rejects_missing_timezone(field: str) -> None:
+    payload = {
+        "name": "Аукцион",
+        "starts_at": datetime(2026, 10, 14, 10, tzinfo=UTC),
+        "ends_at": datetime(2026, 10, 14, 18, tzinfo=UTC),
+    }
+    payload[field] = payload[field].replace(tzinfo=None)
+
+    with pytest.raises(ValidationError):
+        AuctionCreate(**payload)
+
+
+@pytest.mark.parametrize("price", ["0", "-0.01", "NaN", "Infinity", "1000.001", "10000000000.00"])
+def test_sale_schema_rejects_invalid_price(price: str) -> None:
+    from auctions.schemas import SaleCreate
+
+    with pytest.raises(ValidationError):
+        SaleCreate(lot_id=1, buyer_id=1, final_price=Decimal(price))
+
+
+@pytest.mark.parametrize("field", ["lot_id", "buyer_id"])
+@pytest.mark.parametrize("identifier", [0, -1])
+def test_sale_schema_rejects_non_positive_ids(field: str, identifier: int) -> None:
+    from auctions.schemas import SaleCreate
+
+    payload = {"lot_id": 1, "buyer_id": 1, "final_price": Decimal("1000.00")}
+    payload[field] = identifier
+    with pytest.raises(ValidationError):
+        SaleCreate(**payload)
+
+
+def test_sale_schema_accepts_maximum_price() -> None:
+    from auctions.schemas import SaleCreate
+
+    sale = SaleCreate(lot_id=1, buyer_id=1, final_price=Decimal("9999999999.99"))
+    assert sale.final_price == Decimal("9999999999.99")
+
+
+@pytest.mark.parametrize("price", ["0", "-0.01"])
+def test_lot_schema_rejects_non_positive_price(price: str) -> None:
+    with pytest.raises(ValidationError):
+        LotCreate(
+            auction_id=1,
+            seller_id=1,
+            name="Лот",
+            description="Описание",
+            starting_price=Decimal(price),
+        )

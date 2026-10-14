@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import event, func, select
 from sqlalchemy.orm import Session
 
 from auctions.models import Auction, Buyer, Lot, LotStatus, Revenue, Sale, Seller
@@ -85,3 +85,40 @@ def test_register_sale_rejects_unknown_buyer(db_session: Session) -> None:
 
     with pytest.raises(BuyerNotFoundError):
         register_sale(db_session, payload, commission_rate=Decimal("10.00"))
+
+
+@pytest.mark.parametrize("commit", [True, False])
+def test_sale_at_starting_price_is_allowed(db_session: Session, commit: bool) -> None:
+    lot, buyer = create_sale_context(db_session)
+    payload = SaleCreate(lot_id=lot.id, buyer_id=buyer.id, final_price=lot.starting_price)
+
+    sale = register_sale(db_session, payload, Decimal("10.00"), commit=commit)
+
+    assert sale.final_price == Decimal("1000.00")
+    assert sale.revenue.amount == Decimal("100.00")
+    assert db_session.scalar(select(func.count()).select_from(Sale)) == 1
+    assert db_session.scalar(select(func.count()).select_from(Revenue)) == 1
+    assert lot.status == LotStatus.SOLD
+
+
+@pytest.mark.parametrize("commit", [True, False])
+def test_failed_sale_rolls_back_all_changes(db_session: Session, commit: bool) -> None:
+    lot, buyer = create_sale_context(db_session)
+    lot_id = lot.id
+    payload = SaleCreate(lot_id=lot.id, buyer_id=buyer.id, final_price=Decimal("1250.00"))
+
+    def invalidate_revenue(session: Session, context: object, instances: object) -> None:
+        for record in session.new:
+            if isinstance(record, Revenue):
+                record.amount = Decimal("-0.01")
+
+    event.listen(db_session, "before_flush", invalidate_revenue)
+    try:
+        with pytest.raises(LotAlreadySoldError):
+            register_sale(db_session, payload, Decimal("10.00"), commit=commit)
+    finally:
+        event.remove(db_session, "before_flush", invalidate_revenue)
+
+    assert db_session.get(Lot, lot_id).status == LotStatus.AVAILABLE
+    assert db_session.scalar(select(func.count()).select_from(Sale)) == 0
+    assert db_session.scalar(select(func.count()).select_from(Revenue)) == 0
