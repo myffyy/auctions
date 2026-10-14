@@ -10,3 +10,5 @@ h1, h2, h3, p { margin-top: 0; } h1 { margin-bottom: 0; } h2 { font-size: 1.12re
 table { width: 100%; border-collapse: collapse; font-size: .88rem; } th, td { padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; } th { color: #475569; } .empty, .hint { color: #64748b; } .message { min-height: 1.4em; } .success { color: #15803d; } .error { color: #b91c1c; }
 .login-page { min-height: 100vh; display: grid; place-items: center; padding: 20px; } .login-card { width: min(100%, 430px); padding: 32px; background: white; border-radius: 12px; box-shadow: 0 8px 30px #17255422; } .login-card button { margin-top: 10px; } code { font-size: .8rem; }
 @media (max-width: 620px) { header { align-items: flex-start; gap: 16px; flex-direction: column; } main { padding: 18px; } }
+
+.review-actions { min-width: 220px; } .review-actions form { margin-top: 10px; } #purchase-requests td { overflow-wrap: anywhere; }

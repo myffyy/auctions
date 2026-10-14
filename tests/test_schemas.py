@@ -103,3 +103,24 @@ def test_lot_schema_rejects_non_positive_price(price: str) -> None:
             description="Описание",
             starting_price=Decimal(price),
         )
+
+
+@pytest.mark.parametrize("reason", ["", "   ", "\t\n", "А" * 501, None])
+def test_rejection_schema_rejects_invalid_reason(reason: str | None) -> None:
+    from auctions.schemas import PurchaseRequestReject
+
+    with pytest.raises(ValidationError):
+        PurchaseRequestReject(reason=reason)
+
+
+@pytest.mark.parametrize("reason", ["А", "А" * 500])
+def test_rejection_schema_accepts_reason_boundaries(reason: str) -> None:
+    from auctions.schemas import PurchaseRequestReject
+
+    assert PurchaseRequestReject(reason=reason).reason == reason
+
+
+def test_rejection_schema_trims_reason() -> None:
+    from auctions.schemas import PurchaseRequestReject
+
+    assert PurchaseRequestReject(reason="  Недостаточная цена  ").reason == "Недостаточная цена"

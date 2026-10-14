@@ -155,6 +155,32 @@ def seed_new_tables(connection: Connection, revision: str, ids: dict[str, int]) 
             offered_price=Decimal("1100.00"),
             status="pending",
         )
+        insert(
+            connection,
+            metadata.tables["purchase_requests"],
+            lot_id=ids["lot"],
+            buyer_id=ids["buyer"],
+            offered_price=Decimal("1000.00"),
+            status="rejected",
+            reviewed_at=datetime(2026, 10, 14, 12, tzinfo=UTC),
+        )
+    elif revision == "20261014_0004":
+        requests = metadata.tables["purchase_requests"]
+        legacy = connection.execute(select(requests.c.rejection_reason)).scalars().all()
+        require(
+            len(legacy) == 2 and all(reason is None for reason in legacy),
+            "Причины старых заявок должны остаться NULL.",
+        )
+        insert(
+            connection,
+            requests,
+            lot_id=ids["lot"],
+            buyer_id=ids["buyer"],
+            offered_price=Decimal("1200.00"),
+            status="rejected",
+            reviewed_at=datetime(2026, 10, 14, 13, tzinfo=UTC),
+            rejection_reason="Контрольная причина отклонения",
+        )
 
 
 def current_revision(connection: Connection) -> str:

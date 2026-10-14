@@ -138,6 +138,11 @@ class PurchaseRequest(Base):
         CheckConstraint(
             "status IN ('pending', 'approved', 'rejected')", name="purchase_request_status"
         ),
+        CheckConstraint(
+            "rejection_reason IS NULL OR "
+            "(status = 'rejected' AND length(btrim(rejection_reason)) > 0)",
+            name="rejection_reason",
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -147,6 +152,7 @@ class PurchaseRequest(Base):
     status: Mapped[str] = mapped_column(String(20), default=PurchaseRequestStatus.PENDING)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class Revenue(Base):
