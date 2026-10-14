@@ -1,5 +1,6 @@
 """Подготовить конфигурацию и PostgreSQL перед первым запуском."""
 
+import argparse
 import getpass
 import os
 from pathlib import Path
@@ -9,23 +10,24 @@ from alembic import command
 from alembic.config import Config
 from psycopg import sql
 from sqlalchemy.engine import URL, make_url
+from tests.configuration import apply_test_settings, load_test_settings
 
 from auctions.config import Settings
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def prepare_env() -> None:
+def prepare_env(name: str = ".env") -> None:
     """Создать локальную конфигурацию, сохранив существующий файл."""
-    env_path = ROOT / ".env"
-    template = (ROOT / ".env.example").read_text(encoding="utf-8")
+    env_path = ROOT / name
+    template = (ROOT / f"{name}.example").read_text(encoding="utf-8")
     try:
         descriptor = os.open(env_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as destination:
             destination.write(template)
-        print("Создан .env из .env.example.")
+        print(f"Создан {name} из {name}.example.")
     except FileExistsError:
-        print("Используется существующий .env.")
+        print(f"Используется существующий {name}.")
 
 
 def connect(url: URL) -> psycopg.Connection:
@@ -89,8 +91,14 @@ def prepare_database(url: URL) -> None:
 
 def main() -> None:
     os.chdir(ROOT)
-    prepare_env()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--test", action="store_true", help="подготовить отдельную тестовую БД")
+    args = parser.parse_args()
+    prepare_env(".env.test" if args.test else ".env")
     try:
+        if args.test:
+            settings = load_test_settings()
+            apply_test_settings(settings)
         prepare_database(make_url(Settings().database_url))
     except (psycopg.Error, ValueError):
         raise SystemExit(
@@ -100,7 +108,8 @@ def main() -> None:
             "Существующие пароли и владельцы автоматически не изменяются."
         ) from None
     command.upgrade(Config(str(ROOT / "alembic.ini")), "head")
-    print("Настройка завершена. Для запуска выполните make run.")
+    target = "make test" if args.test else "make run"
+    print(f"Настройка завершена. Для запуска выполните {target}.")
 
 
 if __name__ == "__main__":
