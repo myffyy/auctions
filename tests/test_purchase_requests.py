@@ -96,7 +96,10 @@ def test_rejected_request_is_kept_and_allows_resubmission(
     client, lot, _ = buyer_context
     request = send_request(client, lot.id)
     login_as_admin(client)
-    response = client.post(f"/web/admin/purchase-requests/{request['id']}/reject")
+    response = client.post(
+        f"/web/admin/purchase-requests/{request['id']}/reject",
+        json={"reason": "Предложение отклонено администратором"},
+    )
 
     assert response.status_code == 200
     assert response.json()["status"] == "rejected"
@@ -127,11 +130,17 @@ def test_reject_repeated_review(
     client, lot, _ = buyer_context
     request = send_request(client, lot.id)
     login_as_admin(client)
-    initial = client.post(f"/web/admin/purchase-requests/{request['id']}/{first_action}")
+    initial = client.post(
+        f"/web/admin/purchase-requests/{request['id']}/{first_action}",
+        json={"reason": "Причина отклонения"} if first_action == "reject" else None,
+    )
     assert initial.status_code == 200
     history_before = client.get("/web/purchase-requests").json()
 
-    repeated = client.post(f"/web/admin/purchase-requests/{request['id']}/{second_action}")
+    repeated = client.post(
+        f"/web/admin/purchase-requests/{request['id']}/{second_action}",
+        json={"reason": "Другая причина"} if second_action == "reject" else None,
+    )
 
     assert repeated.status_code == 409
     assert client.get("/web/purchase-requests").json() == history_before
@@ -151,7 +160,10 @@ def test_buyer_cannot_review_request(buyer_context: tuple[TestClient, Lot, int])
     client, lot, _ = buyer_context
     request = send_request(client, lot.id)
     for action in ["approve", "reject"]:
-        response = client.post(f"/web/admin/purchase-requests/{request['id']}/{action}")
+        response = client.post(
+            f"/web/admin/purchase-requests/{request['id']}/{action}",
+            json={"reason": "Недопустимое действие покупателя"} if action == "reject" else None,
+        )
         assert response.status_code == 403
     assert client.get("/web/purchase-requests").json()[0]["status"] == "pending"
 
@@ -199,3 +211,76 @@ def test_failed_approval_keeps_request_pending(
     assert history[0]["status"] == "pending"
     assert history[0]["reviewed_at"] is None
     assert_no_sale(db_session, lot.id)
+
+
+@pytest.mark.parametrize("reason", ["А", "А" * 500, "<img src=x onerror=alert(1)>"])
+def test_rejection_reason_is_saved_and_visible_to_buyer(
+    buyer_context: tuple[TestClient, Lot, int], db_session: Session, reason: str
+) -> None:
+    client, lot, _ = buyer_context
+    request = send_request(client, lot.id)
+    login_as_admin(client)
+    response = client.post(
+        f"/web/admin/purchase-requests/{request['id']}/reject", json={"reason": f"  {reason}  "}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["rejection_reason"] == reason
+    assert response.json()["status"] == "rejected"
+    assert response.json()["reviewed_at"] is not None
+    assert db_session.get(PurchaseRequest, request["id"]).rejection_reason == reason
+    assert_no_sale(db_session, lot.id)
+
+    client.post("/auth/logout")
+    client.post(
+        "/auth/login", json={"username": "request-buyer", "password": "buyer-test-password"}
+    )
+    history = client.get("/web/purchase-requests").json()
+    assert history[0]["rejection_reason"] == reason
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [None, {}, {"reason": ""}, {"reason": "   "}, {"reason": "А" * 501}, {"reason": None}],
+)
+def test_invalid_rejection_does_not_change_request(
+    buyer_context: tuple[TestClient, Lot, int], db_session: Session, payload: dict | None
+) -> None:
+    client, lot, _ = buyer_context
+    request = send_request(client, lot.id)
+    login_as_admin(client)
+    response = client.post(f"/web/admin/purchase-requests/{request['id']}/reject", json=payload)
+
+    assert response.status_code == 422
+    stored = db_session.get(PurchaseRequest, request["id"])
+    assert stored.status == "pending"
+    assert stored.rejection_reason is None
+    assert stored.reviewed_at is None
+    assert_no_sale(db_session, lot.id)
+
+
+def test_unknown_request_cannot_be_rejected(admin_client: TestClient) -> None:
+    response = admin_client.post(
+        "/web/admin/purchase-requests/999999/reject", json={"reason": "Причина отклонения"}
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("status", "reason"), [("pending", "Причина"), ("approved", "Причина"), ("rejected", "   ")]
+)
+def test_database_rejects_reason_in_invalid_state(
+    buyer_context: tuple[TestClient, Lot, int], db_session: Session, status: str, reason: str
+) -> None:
+    from sqlalchemy.exc import IntegrityError
+
+    client, lot, _ = buyer_context
+    request = send_request(client, lot.id)
+    stored = db_session.get(PurchaseRequest, request["id"])
+    with pytest.raises(IntegrityError), db_session.begin_nested():
+        stored.status = status
+        stored.rejection_reason = reason
+        db_session.flush()
+
+    assert stored.status == "pending"
+    assert stored.rejection_reason is None
