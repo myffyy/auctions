@@ -8,7 +8,7 @@
 | 2. Создание лота в существующем аукционе с положительной ценой | `test_create_get_and_list_lots`; `test_reject_lot_with_unknown_auction`; `test_reject_lot_with_unknown_seller`; `test_lot_schema_rejects_price_with_too_many_decimal_places`; `test_lot_schema_rejects_non_positive_price` |
 | 3. Заявка на доступный лот, допустимая цена и одна pending-заявка | `test_request_at_starting_price_does_not_create_sale`; `test_reject_request_below_starting_price`; `test_reject_duplicate_pending_request`; `test_reject_request_for_sold_lot` |
 | 4. Подтверждение администратором, продажа и доход, статусы и время | `test_buyer_request_requires_admin_approval`; `test_reject_repeated_review`; `test_buyer_cannot_review_request`; `test_failed_approval_keeps_request_pending`; `test_failed_sale_rolls_back_all_changes` |
-| 5. Отклонение, история и доступность лота | `test_rejected_request_is_kept_and_allows_resubmission`; `test_reject_repeated_review` |
+| 5. Отклонение, история и доступность лота | `test_rejected_request_is_kept_and_allows_resubmission`; `test_reject_repeated_review`; `test_rejection_reason_is_saved_and_visible_to_buyer`; `test_invalid_rejection_does_not_change_request` |
 | 6. Однократная продажа, нижняя граница цены, комиссия и округление | `test_register_sale_rejects_repeated_sale`; `test_register_sale_rejects_price_below_starting`; `test_sale_at_starting_price_is_allowed`; `test_sale_price_and_commission`; `test_rejected_sale_has_no_writes` |
 | 7. Служебный ответ `/health` | `test_health` |
 
@@ -34,3 +34,5 @@
 | Запрет продажи недоступного лота инвертирован | `test_rejected_sale_has_no_writes[sold_lot-LotAlreadySoldError]` и успешные продажи |
 
 Эти три примера подтверждают чувствительность тестов к выбранным изменениям основной логики. Они не являются оценкой доли всех возможных мутаций проекта.
+
+Для новой причины отклонения дополнительно проверяются границы 1/500 символов, удаление пробелов, отсутствие изменения заявки при неверном теле, сохранение и чтение покупателем и ограничения PostgreSQL на пустую причину и причину у pending/approved. Проверка миграций сохраняет старые pending/rejected-заявки с NULL в новом поле и записывает новую причину после обновления.
