@@ -16,6 +16,7 @@ dist/
 .coverage
 .coverage.*
 htmlcov/
+reports/
 
 # Переменные окружения и секреты
 .env
