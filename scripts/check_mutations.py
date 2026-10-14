@@ -3,11 +3,14 @@
 import json
 import os
 import shutil
-import subprocess
+
+# Запускается только локальный pytest без оболочки; обоснование: docs/sast.md.
+import subprocess  # nosec B404
 import sys
 import tempfile
-import xml.etree.ElementTree as ET
 from pathlib import Path
+
+from defusedxml import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 MUTATIONS = [
@@ -31,7 +34,8 @@ def run_tests(workspace: Path) -> tuple[int, list[str]]:
         "PYTHONDONTWRITEBYTECODE": "1",
     }
     report = workspace / "results.xml"
-    result = subprocess.run(
+    # Команда фиксирована, используются sys.executable и аргументы списка, shell=False.
+    result = subprocess.run(  # nosec B603
         [
             sys.executable,
             "-m",
@@ -40,6 +44,7 @@ def run_tests(workspace: Path) -> tuple[int, list[str]]:
             "tests/test_sales_unit.py",
             f"--junitxml={report}",
         ],
+        shell=False,
         cwd=workspace,
         env=env,
         capture_output=True,

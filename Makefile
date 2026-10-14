@@ -1,4 +1,4 @@
-.PHONY: setup test-setup run test test-unit test-mutations quality format migrate verify
+.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate verify
 
 setup:
 	uv sync --locked
@@ -34,8 +34,14 @@ quality:
 	uv run --locked ruff format --check .
 	uv run --locked ruff check .
 
+sast:
+	mkdir -p reports
+	uv run --locked bandit -r src scripts migrations tests/configuration.py --severity-level all \
+		--confidence-level all -f json -o reports/sast.json
+	uv run --locked python scripts/check_sast_report.py
+
 format:
 	uv run --locked ruff format .
 	uv run --locked ruff check . --fix
 
-verify: quality test test-mutations
+verify: quality sast test test-mutations

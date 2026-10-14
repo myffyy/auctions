@@ -16,6 +16,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "bandit==1.9.4",
+    "defusedxml==0.7.1",
     "httpx==0.28.1",
     "pytest==8.4.2",
     "pytest-cov==7.1.0",
