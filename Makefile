@@ -60,3 +60,18 @@ format:
 	uv run --locked ruff check . --fix
 
 verify: quality sast test test-mutations check-migrations check-backup
+# ====== Добавьте эти строки в существующий Makefile (ЛР4) ======
+# И допишите цели в список .PHONY в первой строке:
+#   ... verify up down container-check
+
+up:
+	docker compose up -d --build
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f
+
+container-check:
+	bash scripts/container_check.sh
