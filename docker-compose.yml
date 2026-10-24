@@ -1,0 +1,69 @@
+name: auctions
+
+services:
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-auctions}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-auctions}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    # Порт БД наружу НЕ публикуется (пункт 8): доступ только из сети backend.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-auctions} -d ${POSTGRES_DB:-auctions}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: auctions-app:0.1.0          # фиксированный тег, не latest (пункт 13)
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-auctions}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-auctions}
+      APP_HOST: 0.0.0.0
+      APP_PORT: "8000"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      COMMISSION_RATE: ${COMMISSION_RATE:-10.00}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      ADMIN_LAST_NAME: ${ADMIN_LAST_NAME:-Попрядухин}
+      ADMIN_FIRST_NAME: ${ADMIN_FIRST_NAME:-Евгений}
+      ADMIN_MIDDLE_NAME: ${ADMIN_MIDDLE_NAME:-Романович}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-myffy}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+    depends_on:
+      db:
+        condition: service_healthy     # порядок запуска (пункт 7)
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    networks:
+      - backend
+    healthcheck:                       # healthcheck (пункт 7)
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status==200 else 1)\""]
+      interval: 10s
+      timeout: 4s
+      retries: 5
+      start_period: 20s
+    stop_grace_period: 20s             # время на корректное завершение (пункт 5)
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    restart: unless-stopped
+
+volumes:
+  db-data:                             # данные БД переживают пересоздание контейнеров (пункт 9)
+
+networks:
+  backend:
