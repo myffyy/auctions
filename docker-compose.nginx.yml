@@ -21,7 +21,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - "8080:80"            # единственная точка входа наружу
+      - "8090:80"            # единственная точка входа наружу
     networks:
       - backend
     restart: unless-stopped
