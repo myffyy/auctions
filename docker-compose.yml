@@ -2,7 +2,7 @@ name: auctions
 
 services:
   db:
-    image: postgres:14-alpine
+    image: postgres:14-alpine@sha256:862ffc2556a2db763f0439c8323490000cd01975d2798a845e4a8dd3a905862f
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-auctions}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}

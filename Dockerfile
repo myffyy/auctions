@@ -1,12 +1,14 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.7.0@sha256:dbbd5e059e8a07ff7ea6233b213b36aa516b4c53c645f1817a4dd18b83cbea56
 
 ############################
 # Сборка окружения (uv)
 ############################
-FROM python:3.12.5-slim-bookworm AS base
+FROM postgres:14-bookworm@sha256:a389ed49344afc8f4444efd4eb512965df07aaa6ed84b239b54a23246e9fe347 AS pgclient
+
+FROM python:3.12.5-slim-bookworm@sha256:c24c34b502635f1f7c4e99dc09a2cbd85d480b7dcfd077198c6b5af138906390 AS base
 
 # uv фиксированной версии (пункт 2 — воспроизводимая сборка)
-COPY --from=ghcr.io/astral-sh/uv:0.10.7 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10.7@sha256:edd1fd89f3e5b005814cc8f777610445d7b7e3ed05361f9ddfae67bebfe8456a /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -14,19 +16,16 @@ ENV UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Клиент PostgreSQL 14 для pg_dump/pg_restore (пункт 10: бэкап/восстановление в контейнере)
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates gnupg \
-    && install -d /usr/share/postgresql-common/pgdg \
-    && curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
-         https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
-         http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
-         > /etc/apt/sources.list.d/pgdg.list \
+# Неизменяемый снимок Debian фиксирует также транзитивные APT-зависимости.
+RUN rm /etc/apt/sources.list.d/debian.sources \
+    && echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20241001T000000Z bookworm main" > /etc/apt/sources.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends postgresql-client-14 \
-    && apt-get purge -y --auto-remove gnupg \
+    && apt-get install -y --no-install-recommends libpq5 \
     && rm -rf /var/lib/apt/lists/*
+
+# Клиент той же основной версии, что и БД; никаких изменяемых PGDG-репозиториев.
+COPY --from=pgclient /usr/lib/postgresql/14/bin/pg_dump /usr/local/bin/pg_dump
+COPY --from=pgclient /usr/lib/postgresql/14/bin/pg_restore /usr/local/bin/pg_restore
 
 WORKDIR /app
 
