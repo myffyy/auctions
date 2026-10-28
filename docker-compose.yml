@@ -3,6 +3,8 @@ name: auctions
 services:
   db:
     image: postgres:14-alpine@sha256:862ffc2556a2db763f0439c8323490000cd01975d2798a845e4a8dd3a905862f
+    user: "70:70"
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=40"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-auctions}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -20,8 +22,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 512M
+          cpus: "0.5"
+          memory: 256M
     restart: unless-stopped
 
   migrate:
@@ -41,6 +43,7 @@ services:
       ADMIN_MIDDLE_NAME: ${ADMIN_MIDDLE_NAME:-Романович}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-myffy}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+    user: "10001:10001"
     command: ["alembic", "upgrade", "head"]
     depends_on:
       db:
@@ -50,12 +53,13 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 512M
+          cpus: "0.5"
+          memory: 256M
     restart: "no"
 
   app:
     image: auctions-app:0.1.0
+    user: "10001:10001"
     environment: *app-environment
     depends_on:
       migrate:
@@ -74,8 +78,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 512M
+          cpus: "0.5"
+          memory: 256M
     restart: unless-stopped
 
 volumes:
