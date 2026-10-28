@@ -26,3 +26,5 @@ Bandit проверяет Python AST. JavaScript/HTML и уязвимости у
 ## Проверка образа ЛР4
 
 В scripts/check_container_image.py B404/B603 обоснованы запуском только Docker CLI, найденного через shutil.which, с фиксированными командами и списком аргументов без shell. Секреты передаются в память проверяющего процесса из JSON через stdin; не передаются в argv и не выводятся. docker image save читается потоком без записи слоёв на диск.
+
+В scripts/container_check.py B404/B603 относятся к единому запуску доверенного Docker CLI (shutil.which, список аргументов, shell=False). B310 относится к urllib.request.urlopen для URL, сформированного самим тестом из 127.0.0.1 и проверенного числового порта. Runtime-секреты не передаются в argv.

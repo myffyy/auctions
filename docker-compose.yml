@@ -30,7 +30,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: auctions-app:0.1.0          # фиксированный тег, не latest (пункт 13)
+    image: &app-image ${APP_IMAGE:-auctions-app:0.1.0}
     environment: &app-environment
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-auctions}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-auctions}
       APP_HOST: 0.0.0.0
@@ -58,7 +58,7 @@ services:
     restart: "no"
 
   app:
-    image: auctions-app:0.1.0
+    image: *app-image
     user: "10001:10001"
     environment: *app-environment
     depends_on:
