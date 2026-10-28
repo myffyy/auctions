@@ -36,7 +36,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --no-dev
 
 # 2) Затем исходный код приложения
-COPY . /app
+COPY src /app/src
+COPY migrations /app/migrations
+COPY docker/entrypoint.sh /app/docker/entrypoint.sh
+COPY scripts/backup.py /app/scripts/backup.py
+COPY alembic.ini pyproject.toml uv.lock /app/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 

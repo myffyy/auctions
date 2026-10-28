@@ -8,9 +8,13 @@ ok()   { echo "OK:   $*"; }
 DBUSER="${POSTGRES_USER:-auctions}"
 DBNAME="${POSTGRES_DB:-auctions}"
 
+$COMPOSE config --format json | python3 scripts/container_policy.py
+docker compose -f docker-compose.yml -f docker-compose.nginx.yml config --format json | python3 scripts/container_policy.py
+
 echo "== 1. Сборка образа (воспроизводимость) =="
 $COMPOSE build
 ok "образ собран"
+$COMPOSE config --format json | python3 -m scripts.check_container_image
 
 echo "== 2. Запуск окружения =="
 $COMPOSE up -d
