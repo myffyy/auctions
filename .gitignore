@@ -23,6 +23,7 @@ reports/
 .env.*
 !.env.example
 !.env.test.example
+!.env.docker.example
 
 # Логи и резервные копии
 *.log

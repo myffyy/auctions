@@ -1,0 +1,20 @@
+{
+  "host": "app-server",
+  "system": "Linux",
+  "machine": "aarch64",
+  "checks": [
+    "policy-and-image",
+    "migrations-and-runtime",
+    "recreate-with-data",
+    "image-update-with-data",
+    "restore-into-new-volume",
+    "graceful-shutdown",
+    "two-instances-and-failover"
+  ],
+  "passed": true,
+  "project": "auctions-check-ec841923c5b2",
+  "images": {
+    "before": "sha256:30a89825c1a1482e5632959dec0a65b3a9eeb93f7b9fea42e92d39c50f4432c4",
+    "after": "sha256:aec6c2e47b11be5e5f894e789ff6de2284941335c47213362151946016ab2613"
+  }
+}
