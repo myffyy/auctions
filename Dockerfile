@@ -53,6 +53,6 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 EXPOSE 8000
 
-# entrypoint ждёт БД и накатывает миграции; CMD запускается как PID 1 через exec (пункт 5)
+# Compose выполняет миграции отдельно; exec запускает CMD как PID 1 (пункт 5)
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["uvicorn", "auctions.main:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8000"]

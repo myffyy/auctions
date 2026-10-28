@@ -24,12 +24,12 @@ services:
           memory: 512M
     restart: unless-stopped
 
-  app:
+  migrate:
     build:
       context: .
       dockerfile: Dockerfile
     image: auctions-app:0.1.0          # фиксированный тег, не latest (пункт 13)
-    environment:
+    environment: &app-environment
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-auctions}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-auctions}
       APP_HOST: 0.0.0.0
       APP_PORT: "8000"
@@ -41,9 +41,25 @@ services:
       ADMIN_MIDDLE_NAME: ${ADMIN_MIDDLE_NAME:-Романович}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-myffy}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+    command: ["alembic", "upgrade", "head"]
     depends_on:
       db:
-        condition: service_healthy     # порядок запуска (пункт 7)
+        condition: service_healthy
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    restart: "no"
+
+  app:
+    image: auctions-app:0.1.0
+    environment: *app-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "${APP_PORT:-8000}:8000"
     networks:
