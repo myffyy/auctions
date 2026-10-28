@@ -54,6 +54,9 @@ ENV PATH="/app/.venv/bin:$PATH" \
     APP_HOST=0.0.0.0 \
     APP_PORT=8000
 
+ARG RELEASE_REVISION=development
+LABEL org.opencontainers.image.revision=$RELEASE_REVISION
+
 EXPOSE 8000
 
 # Compose выполняет миграции отдельно; exec запускает CMD как PID 1 (пункт 5)

@@ -1,4 +1,4 @@
-.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate check-migrations backup restore check-backup verify
+.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate check-migrations backup restore check-backup verify up down logs container-check
 
 export BACKUP_FILE
 
@@ -60,9 +60,6 @@ format:
 	uv run --locked ruff check . --fix
 
 verify: quality sast test test-mutations check-migrations check-backup
-# ====== Добавьте эти строки в существующий Makefile (ЛР4) ======
-# И допишите цели в список .PHONY в первой строке:
-#   ... verify up down container-check
 
 up:
 	docker compose up -d --build
