@@ -1,0 +1,48 @@
+name: Контейнерное окружение
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  container-check:
+    name: container-check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Создать отдельные секреты тестового окружения
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import secrets
+          values = {key: secrets.token_hex(24) for key in (
+              "POSTGRES_PASSWORD", "SESSION_SECRET", "ADMIN_PASSWORD"
+          )}
+          for value in values.values():
+              print("::add-mask::" + value)
+          path = Path(".env")
+          path.touch(mode=0o600)
+          path.write_text("".join(f"{key}={value}\n" for key, value in values.items()))
+          PY
+      - name: Проверить контейнерное окружение на Linux VM
+        run: |
+          mkdir -p reports
+          make container-check 2>&1 | tee reports/container-check.log
+      - name: Сохранить результат проверки
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: container-check-${{ github.run_id }}
+          path: reports/container-check.*
+          if-no-files-found: error
+          retention-days: 14
