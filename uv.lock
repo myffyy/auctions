@@ -69,6 +69,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "tally-cli" },
 ]
 
 [package.metadata]
@@ -90,6 +91,7 @@ dev = [
     { name = "pytest", specifier = "==8.4.2" },
     { name = "pytest-cov", specifier = "==7.1.0" },
     { name = "ruff", specifier = "==0.16.7" },
+    { name = "tally-cli", specifier = "==0.45.0" },
 ]
 
 [[package]]
@@ -682,6 +684,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/db/a1/3b8ed9c1fc3aa6eebb57732d924ddaa0500ecc3b638d0454816320994383/stevedore-5.9.1.tar.gz", hash = "sha256:e97a2667923efda926e8713fde6a73616df68210a3cbc6f02b48967b676fd8bf", size = 518111, upload-time = "2026-08-20T15:25:14.754Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c5/97/bba6e7ec2f5498b9dcb7b1b6400086b80ae5a8ebaff4b25e8c8add75f439/stevedore-5.9.1-py3-none-any.whl", hash = "sha256:5c8ff3a9f336cc1a06ac0f597bc79d11a2f950bfd32e290ca56b5a301fafafbf", size = 54931, upload-time = "2026-08-20T15:25:13.602Z" },
+]
+
+[[package]]
+name = "tally-cli"
+version = "0.45.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/82/9c/d2afa51af0622d69fe9cd849629ae4b1304089b12e67dedb91212b179182/tally_cli-0.45.0-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:02f8abee9573b7ab248336d63e2200678f686fb312f8bb9bb280525b064e1f55", size = 23451969, upload-time = "2026-08-10T06:24:40.063Z" },
+    { url = "https://files.pythonhosted.org/packages/87/ad/d473f7415805d030205b33c961a6a58a4ac57c101dcb22be82ba3e435644/tally_cli-0.45.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:c825ae60b6cde42a6623bea5e26f7d96a27cb2918d11a8b4a348a946accb10ce", size = 21185962, upload-time = "2026-08-10T06:24:44.542Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/75/08858ae93bf752d09d7f58207ea19bbd48093ce0ecba864bc193494a2b07/tally_cli-0.45.0-py3-none-manylinux_2_26_aarch64.whl", hash = "sha256:249ff64ae58bfef0734a1f5d16a5ef9441410a69a5d4962f7365d59bf131c84e", size = 20648792, upload-time = "2026-08-10T06:24:48.494Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/30/a7281c9904ab96e7ccfa7da654e21cd013571052be9ec35a6eff8490f25e/tally_cli-0.45.0-py3-none-manylinux_2_26_x86_64.whl", hash = "sha256:a365ffe0433c1f2e39a00e23577c3652450bc65bc6852894a4cfbccc651a4819", size = 22861438, upload-time = "2026-08-10T06:24:52.395Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/33/333b9defb86decb0fc48f96b63ffbfcf860a3885b66eabf7091aef9bc84c/tally_cli-0.45.0-py3-none-win_amd64.whl", hash = "sha256:bc0ec700eba631fe94c501e340614f8e469d65697dfd0a5c7ad377beb350c82d", size = 23286395, upload-time = "2026-08-10T06:24:56.151Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/a1/1eff75369edfdce00228c3964ea40479fccf371171ca26d11169f99ac923/tally_cli-0.45.0-py3-none-win_arm64.whl", hash = "sha256:003c8dc1e8fa8b0d084d2db895fc66c16c1cf5c76b40e04a7fe56afd4c16cee3", size = 20788790, upload-time = "2026-08-10T06:24:59.949Z" },
 ]
 
 [[package]]

@@ -22,6 +22,7 @@ dev = [
     "pytest==8.4.2",
     "pytest-cov==7.1.0",
     "ruff==0.16.7",
+    "tally-cli==0.45.0",
 ]
 
 [tool.pytest.ini_options]
