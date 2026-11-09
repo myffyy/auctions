@@ -1,4 +1,4 @@
-.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate check-migrations backup restore check-backup verify up down logs container-check
+.PHONY: setup test-setup run test test-unit test-mutations quality sast format migrate check-migrations backup restore check-backup verify up down logs container-check docker-linter
 
 export BACKUP_FILE
 
@@ -72,3 +72,8 @@ logs:
 
 container-check:
 	bash scripts/container_check.sh
+
+# Автоматические исправления Tally и последующая проверка Hadolint.
+docker-linter:
+	uv run --locked tally lint --fix --fix-unsafe --ignore tally/labels/no-buildx-git-overlap --ignore tally/prefer-copy-heredoc --fail-level error Dockerfile
+	docker run --rm -i hadolint/hadolint:v2.12.0 < Dockerfile
