@@ -29,6 +29,7 @@ services:
     restart: unless-stopped
   docker:
     profiles: [agent]
+    restart: unless-stopped
     build: ./docker
     image: auctions-lr5-dind:local
     privileged: true
@@ -40,6 +41,7 @@ services:
       - agent-tmp:/tmp
   agent:
     profiles: [agent]
+    restart: unless-stopped
     build: ./agent
     network_mode: service:docker
     depends_on:
