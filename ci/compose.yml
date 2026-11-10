@@ -19,6 +19,14 @@ services:
       - registry-data:/var/lib/registry
       - ./.secrets/htpasswd:/auth/htpasswd:ro
     restart: unless-stopped
+  status-relay:
+    profiles: [status]
+    build: ./status-relay
+    environment:
+      JENKINS_STATUS_USER: ${JENKINS_STATUS_USER:-}
+      JENKINS_STATUS_TOKEN: ${JENKINS_STATUS_TOKEN:-}
+      GITHUB_STATUS_TOKEN: ${GITHUB_STATUS_TOKEN:-}
+    restart: unless-stopped
   docker:
     profiles: [agent]
     build: ./docker
