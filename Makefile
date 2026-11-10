@@ -51,7 +51,7 @@ quality:
 
 sast:
 	mkdir -p reports
-	uv run --locked bandit -r src scripts migrations tests/configuration.py --severity-level all \
+	uv run --locked bandit -r src scripts ci migrations tests/configuration.py --severity-level all \
 		--confidence-level all -f json -o reports/sast.json
 	uv run --locked python scripts/check_sast_report.py
 
