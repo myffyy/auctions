@@ -13,6 +13,7 @@ credential = subprocess.run(  # nosec B603 B607
     input="protocol=https\nhost=github.com\n\n",
     text=True,
     capture_output=True,
+    timeout=20,
     check=True,
 )
 values = dict(line.split("=", 1) for line in credential.stdout.splitlines() if "=" in line)
