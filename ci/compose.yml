@@ -11,12 +11,18 @@ services:
     image: registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
     ports:
       - "127.0.0.1:5001:5000"
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: auctions-ci
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
     volumes:
       - registry-data:/var/lib/registry
+      - ./.secrets/htpasswd:/auth/htpasswd:ro
     restart: unless-stopped
   docker:
     profiles: [agent]
-    image: docker:27.5.1-dind@sha256:aa3df78ecf320f5fafdce71c659f1629e96e9de0968305fe1de670e0ca9176ce
+    build: ./docker
+    image: auctions-lr5-dind:local
     privileged: true
     environment:
       DOCKER_TLS_CERTDIR: ""
