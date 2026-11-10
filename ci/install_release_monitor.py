@@ -39,6 +39,11 @@ for name, target in (
     destination = private / target
     shutil.copyfile(root / "ci" / name, destination)
     destination.chmod(0o700)
+(runtime / "ci").mkdir(parents=True, exist_ok=True)
+shutil.copyfile(root / "ci/enable_trusted_gate.py", runtime / "ci/enable_trusted_gate.py")
+workflow = runtime / ".github/workflows/jenkins-gate.yml"
+workflow.parent.mkdir(parents=True, exist_ok=True)
+shutil.copyfile(root / ".github/workflows/jenkins-gate.yml", workflow)
 reports = runtime / "reports"
 reports.mkdir(exist_ok=True)
 plist.parent.mkdir(parents=True, exist_ok=True)

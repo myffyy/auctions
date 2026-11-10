@@ -13,7 +13,11 @@ while :; do
             echo "Release monitor started at $sha"
         elif [ "$(cat "$state")" != "$sha" ]; then
             echo "Checking main commit $sha"
-            if "$runner"; then echo "Release passed for $sha"; else echo "Release blocked for $sha"; fi
+            if python3 "$root/ci/enable_trusted_gate.py"; then
+                if "$runner"; then echo "Release passed for $sha"; else echo "Release blocked for $sha"; fi
+            else
+                echo "Release blocked: trusted GitHub gate could not be enabled"
+            fi
             printf '%s\n' "$sha" > "$state"
         fi
     fi
