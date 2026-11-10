@@ -77,3 +77,22 @@ container-check:
 docker-linter:
 	uv run --locked tally lint --fix --fix-unsafe --ignore tally/labels/no-buildx-git-overlap --ignore tally/prefer-copy-heredoc --fail-level error Dockerfile
 	docker run --rm -i hadolint/hadolint:v2.12.0 < Dockerfile
+
+# Проверки CI не изменяют исходные файлы и возвращают ненулевой код при ошибке.
+.PHONY: docker-lint-check secrets-check dependencies-check image-check
+
+docker-lint-check:
+	uv run --locked tally lint --ignore tally/labels/no-buildx-git-overlap --ignore tally/prefer-copy-heredoc --fail-level error Dockerfile
+	docker run --rm -i hadolint/hadolint:v2.12.0 < Dockerfile
+
+dependencies-check:
+	mkdir -p reports
+	docker run --rm -v "$(CURDIR):/src:ro" -v "$(CURDIR)/reports:/reports" -v auctions-trivy-cache:/root/.cache/ aquasec/trivy:0.60.0 fs --scanners vuln --include-dev-deps --severity HIGH,CRITICAL --exit-code 1 --format json --output /reports/dependencies.json /src/uv.lock
+
+image-check:
+	@test -n "$(IMAGE)" || (echo 'Set IMAGE to the image to scan' >&2; exit 2)
+	mkdir -p reports
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$(CURDIR)/reports:/reports" -v auctions-trivy-cache:/root/.cache/ aquasec/trivy:0.60.0 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --format json --output /reports/image.json "$(IMAGE)"
+
+secrets-check:
+	python3 scripts/check_secrets.py
