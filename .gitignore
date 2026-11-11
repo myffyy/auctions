@@ -34,3 +34,6 @@ backups/
 .idea/
 .vscode/
 .DS_Store
+
+# Локальные секреты CI
+/ci/.secrets/

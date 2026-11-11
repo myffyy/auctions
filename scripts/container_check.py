@@ -8,6 +8,8 @@ import shutil
 # Только доверенный Docker CLI без shell; секреты не передаются в argv.
 import subprocess  # nosec B404
 import tempfile
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from uuid import uuid4
@@ -153,8 +155,14 @@ def request_instance(url: str) -> str:
 
 # Проверяет распределение запросов и работу при отказе реплики.
 def check_failover(environment: Environment, url: str) -> None:
-    # Сначала убеждаемся, что Nginx направляет запросы обеим репликам.
-    instances = {request_instance(url) for _ in range(12)}
+    # После пересоздания приложений nginx может некоторое время хранить старые DNS-записи.
+    deadline = time.monotonic() + 30
+    instances = set()
+    while time.monotonic() < deadline and len(instances) < 2:
+        try:
+            instances.add(request_instance(url))
+        except (OSError, urllib.error.HTTPError):
+            time.sleep(1)
     require(len(instances) == 2, "Запросы не распределяются между двумя репликами")
     stopped = environment.ids("app")[0]
     run([DOCKER, "stop", "-t", "20", stopped])

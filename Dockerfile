@@ -3,8 +3,8 @@
 ############################
 # Сборка окружения (uv)
 ############################
-FROM postgres:14-bookworm@sha256:a389ed49344afc8f4444efd4eb512965df07aaa6ed84b239b54a23246e9fe347 AS pgclient
-FROM python:3.12.5-slim-bookworm@sha256:c24c34b502635f1f7c4e99dc09a2cbd85d480b7dcfd077198c6b5af138906390 AS base
+FROM postgres:14-alpine@sha256:b084304744d27cbc34513a1d2916129bd6a33383fa17b79b9a9030a950f14870 AS pgclient
+FROM python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7 AS base
 
 # uv фиксированной версии (пункт 2 — воспроизводимая сборка)
 COPY --from=ghcr.io/astral-sh/uv:0.10.7@sha256:edd1fd89f3e5b005814cc8f777610445d7b7e3ed05361f9ddfae67bebfe8456a /uv /uvx /bin/
@@ -15,20 +15,10 @@ ENV UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Неизменяемый снимок Debian фиксирует также транзитивные APT-зависимости.
-RUN rm /etc/apt/sources.list.d/debian.sources \
-    && echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20241001T000000Z bookworm main" > /etc/apt/sources.list
-RUN --mount=type=cache,target=/var/cache/apt,id=apt,sharing=locked \
-	--mount=type=cache,target=/var/lib/apt,id=aptlib,sharing=locked \
-	<<EOF
-set -e
-apt-get update
-apt-get install -y --no-install-recommends libpq5=15.8-0+deb12u1
-EOF
-
-# Клиент той же основной версии, что и БД; никаких изменяемых PGDG-репозиториев.
-COPY --from=pgclient /usr/lib/postgresql/14/bin/pg_dump /usr/local/bin/pg_dump
-COPY --from=pgclient /usr/lib/postgresql/14/bin/pg_restore /usr/local/bin/pg_restore
+# Клиент PostgreSQL 14 и совместимая библиотека libpq в Alpine.
+RUN apk add --no-cache libpq=18.6-r0
+COPY --from=pgclient /usr/local/bin/pg_dump /usr/local/bin/pg_dump
+COPY --from=pgclient /usr/local/bin/pg_restore /usr/local/bin/pg_restore
 
 WORKDIR /app
 
@@ -49,7 +39,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
 # Непривилегированный пользователь (пункт 3)
-RUN useradd --create-home --uid 10001 appuser \
+RUN addgroup -g 10001 -S appuser \
+    && adduser -S -D -H -u 10001 -G appuser appuser \
     && chown -R appuser:appuser /app
 
 USER appuser

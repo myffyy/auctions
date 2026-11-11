@@ -1,0 +1,46 @@
+name: Trusted Jenkins gate
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+permissions:
+  statuses: read
+
+jobs:
+  jenkins-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Verify trusted Jenkins status for PR head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY: ${{ github.repository }}
+          API_URL: ${{ github.api_url }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, sys, time, urllib.request
+          sha = os.environ["HEAD_SHA"]
+          url = f'{os.environ["API_URL"]}/repos/{os.environ["REPOSITORY"]}/commits/{sha}/statuses?per_page=100'
+          headers = {"Authorization": "Bearer " + os.environ["GH_TOKEN"], "Accept": "application/vnd.github+json"}
+          deadline = time.monotonic() + 1800
+          while time.monotonic() < deadline:
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20) as response:
+                      statuses = json.load(response)
+                  matches = [item for item in statuses if item["context"] == "ci/jenkins-pr"]
+                  if matches and matches[0]["creator"]["login"] == "myffyy":
+                      state = matches[0]["state"]
+                      print("Trusted Jenkins status:", state, flush=True)
+                      if state == "success":
+                          sys.exit(0)
+                      if state in {"failure", "error"}:
+                          sys.exit(1)
+              except (OSError, ValueError, KeyError):
+                  print("Waiting for GitHub status API", flush=True)
+              time.sleep(30)
+          print("Timed out waiting for a successful trusted Jenkins status", flush=True)
+          sys.exit(1)
+          PYCODE

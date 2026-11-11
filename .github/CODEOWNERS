@@ -1,0 +1,13 @@
+# Изменение критических проверок требует независимого согласования.
+/tests/ @myffy @nast2007y
+/Makefile @myffy @nast2007y
+/pyproject.toml @myffy @nast2007y
+/uv.lock @myffy @nast2007y
+/Jenkinsfile @myffy @nast2007y
+/scripts/ @myffy @nast2007y
+/Dockerfile @myffy @nast2007y
+/.github/ @myffy @nast2007y
+/ci/ @myffy @nast2007
+/migrations/ @myffy @nast2007
+/.tool-versions @myffy @nast2007
+/.python-version @myffy @nast2007

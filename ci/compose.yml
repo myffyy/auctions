@@ -1,0 +1,65 @@
+name: auctions-lr5-ci
+services:
+  jenkins:
+    build: ./jenkins
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+    restart: unless-stopped
+  registry:
+    image: registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+    ports:
+      - "127.0.0.1:5001:5000"
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: auctions-ci
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - registry-data:/var/lib/registry
+      - ./.secrets/htpasswd:/auth/htpasswd:ro
+    restart: unless-stopped
+  status-relay:
+    profiles: [status]
+    build: ./status-relay
+    environment:
+      JENKINS_STATUS_USER: ${JENKINS_STATUS_USER:-}
+      JENKINS_STATUS_TOKEN: ${JENKINS_STATUS_TOKEN:-}
+      GITHUB_STATUS_TOKEN: ${GITHUB_STATUS_TOKEN:-}
+    restart: unless-stopped
+  docker:
+    profiles: [agent]
+    restart: unless-stopped
+    build: ./docker
+    image: auctions-lr5-dind:local
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - docker-data:/var/lib/docker
+      - agent-work:/home/jenkins/agent
+      - agent-tmp:/tmp
+  agent:
+    profiles: [agent]
+    restart: unless-stopped
+    build: ./agent
+    network_mode: service:docker
+    depends_on:
+      - docker
+      - jenkins
+    environment:
+      JENKINS_URL: http://jenkins:8080
+      JENKINS_AGENT_NAME: auctions-ci
+      JENKINS_AGENT_WORKDIR: /home/jenkins/agent
+      JENKINS_WEB_SOCKET: "true"
+      JENKINS_SECRET: ${JENKINS_AGENT_SECRET:-}
+      DOCKER_HOST: tcp://127.0.0.1:2375
+    volumes:
+      - agent-work:/home/jenkins/agent
+      - agent-tmp:/tmp
+volumes:
+  docker-data:
+  agent-work:
+  agent-tmp:
+  jenkins-home:
+  registry-data:

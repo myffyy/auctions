@@ -26,7 +26,7 @@ Dockerfile копирует только перечисленные входны
 
 ## Подготовка и запуск на Linux VM
 
-Проверенная конфигурация app-server: Debian 12, aarch64, 1 ГБ RAM, Docker 20.10.24, Compose 2.36.2, Buildx 0.24.0, make 4.3. На хосте нужен Python 3.10+; Python приложения 3.12.5 находится в образе. Для !override нужен Compose 2.24.4+ ([правила объединения Compose](https://docs.docker.com/reference/compose-file/merge/)).
+Проверенная конфигурация app-server: Debian 12, aarch64, 1 ГБ RAM, Docker 20.10.24, Compose 2.36.2, Buildx 0.24.0, make 4.3. На хосте нужен Python 3.10+; В текущем образе приложения используется Python 3.12.16 на Alpine; локальный Python остаётся закреплённым в `.python-version`. Для !override нужен Compose 2.24.4+ ([правила объединения Compose](https://docs.docker.com/reference/compose-file/merge/)).
 
 В корне репозитория создайте .env из .env.docker.example и заполните три пустых секрета. Пример генерирует их без вывода и сохраняет существующий .env:
 
@@ -89,7 +89,7 @@ ssh -i ~/.ssh/devops_lr2 -L 18090:127.0.0.1:8090 admin@192.168.64.24
 | graceful-shutdown | Каждая реплика завершилась с кодом 0, без OOM; журнал содержит Application shutdown complete |
 | two-instances-and-failover | Запросы дошли до двух X-Instance; после остановки одного экземпляра 20 запросов подряд обслужил оставшийся |
 
-JSON-отчёт: reports/container-check.json. RELEASE_REVISION меняет метаданные артефакта, не бизнес-логику приложения. Это проверяет переход на другой образ с сохранением volume. Состав зависимостей фиксируют digest внешних образов, снимок Debian 20241001T000000Z и uv.lock. Побайтовая идентичность слоёв не заявляется.
+JSON-отчёт: reports/container-check.json. RELEASE_REVISION меняет метаданные артефакта, не бизнес-логику приложения. Это проверяет переход на другой образ с сохранением volume. Базовые образы закреплены по digest, Python-зависимости — в uv.lock, версия libpq указана в Dockerfile. APK-репозиторий изменяемый, поэтому полная воспроизводимость системных пакетов и побайтовая идентичность слоёв не заявляются.
 
 ## Команды для защиты
 
