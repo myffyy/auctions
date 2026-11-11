@@ -20,8 +20,6 @@ cleanup() {
     rm -rf "$tmp"
 }
 trap cleanup EXIT
-export DOCKER_CONFIG="$tmp/docker-config"
-mkdir -p "$DOCKER_CONFIG"
 git clone --quiet --depth=1 --single-branch --branch main https://github.com/myffyy/auctions.git "$tmp/source"
 cd "$tmp/source"
 sha="$(git rev-parse HEAD)"
@@ -45,6 +43,8 @@ docker build --build-arg "RELEASE_REVISION=$sha" -t "$image" .
 make image-check IMAGE="$image"
 remote_sha="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
 [ "$remote_sha" = "$sha" ] || { echo "main changed while checks were running; refusing to publish" >&2; exit 1; }
+export DOCKER_CONFIG="$tmp/docker-config"
+mkdir -p "$DOCKER_CONFIG"
 cat "$password" | docker login localhost:5001 --username ci --password-stdin >/dev/null
 docker push "$image" | tee reports/publish.log
 docker image inspect "$image" --format '{{index .RepoDigests 0}}' > reports/published-digest.txt
