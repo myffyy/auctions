@@ -16,7 +16,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     PYTHONDONTWRITEBYTECODE=1
 
 # Клиент PostgreSQL 14 и совместимая библиотека libpq в Alpine.
-RUN apk add --no-cache libpq=18.6-r0
+RUN apk add --no-cache libpq=18.7-r0 krb5-libs=1.22.3-r0
 COPY --from=pgclient /usr/local/bin/pg_dump /usr/local/bin/pg_dump
 COPY --from=pgclient /usr/local/bin/pg_restore /usr/local/bin/pg_restore
 
