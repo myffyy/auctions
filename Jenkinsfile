@@ -1,11 +1,6 @@
 pipeline {
     agent { label 'auctions-ci' }
     options { skipDefaultCheckout(); timestamps(); timeout(time: 90, unit: 'MINUTES'); disableConcurrentBuilds(); buildDiscarder(logRotator(daysToKeepStr: '14')) }
-    environment {
-        POSTGRES_PASSWORD = 'ci-container-only'
-        SESSION_SECRET = 'ci-container-session-only'
-        ADMIN_PASSWORD = 'ci-container-admin-only'
-    }
     stages {
         stage('Подготовка') {
             steps {
@@ -35,7 +30,14 @@ pipeline {
         stage('Миграции') { steps { sh 'make check-migrations' } }
         stage('Резервное копирование') { steps { sh 'make check-backup' } }
         stage('Безопасность') { steps { sh 'make sast secrets-check dependencies-check' } }
-        stage('Контейнер') { steps { sh 'make container-check' } }
+        stage('Контейнер') {
+            environment {
+                POSTGRES_PASSWORD = credentials('auctions-ci-postgres-password')
+                SESSION_SECRET = credentials('auctions-ci-session-secret')
+                ADMIN_PASSWORD = credentials('auctions-ci-admin-password')
+            }
+            steps { sh 'make container-check' }
+        }
         stage('Сборка и анализ') {
             steps { sh '''
                 set -eu
