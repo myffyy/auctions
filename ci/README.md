@@ -4,6 +4,17 @@
 
 Образ агента содержит Python 3.12.5, uv 0.10.7, Docker CLI/Compose, Make и клиент PostgreSQL. Профиль `agent` поднимает отдельный Docker daemon; агент подключается к Jenkins через WebSocket. В Jenkins нужно создать inbound-узел `auctions-ci` с меткой `auctions-ci` и каталогом `/home/jenkins/agent`, получить его секрет в настройках узла и передать через защищённую переменную `JENKINS_AGENT_SECRET` при запуске `docker compose -f ci/compose.yml --profile agent up -d --build`. Секрет не должен попадать в Git, вывод команд или отчёты. Для реальных недоверенных PR необходим отдельный одноразовый агент и изолированный Docker daemon для каждой сборки: общий агент сохраняет состояние между заданиями.
 
+
+Перед запуском этапа «Контейнер» добавьте в Jenkins три записи типа **Secret text**, доступные заданию auctions. Используйте отдельные значения для тестового окружения.
+
+| ID в Jenkins | Переменная Docker Compose |
+| --- | --- |
+| `auctions-ci-postgres-password` | `POSTGRES_PASSWORD` |
+| `auctions-ci-session-secret` | `SESSION_SECRET` |
+| `auctions-ci-admin-password` | `ADMIN_PASSWORD` |
+
+Пароль PostgreSQL должен состоять из символов, безопасных для URL, поскольку Compose подставляет его напрямую в `DATABASE_URL`. Jenkins передаёт эти значения только на этапе «Контейнер».
+
 В Jenkinsfile предусмотрены отдельная PostgreSQL на случайном локальном порту, `make quality`, тесты и контрольные мутации, миграции, backup, SAST, Gitleaks, анализ lock-файла, контейнерный цикл, сборка и сканирование образа. Для локального запуска новых проверок: `make docker-lint-check`, `make secrets-check`, `make dependencies-check`, `make image-check IMAGE=имя:тег`. Для сканеров необходимы Docker и доступ к базам уязвимостей. Отчёты находятся в `reports/`; значения секретов в отчёте Gitleaks редактируются.
 
 ## Оставшиеся условия внедрения
