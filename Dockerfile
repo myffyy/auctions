@@ -52,6 +52,7 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 ARG RELEASE_REVISION=development
 
+ENV RELEASE_REVISION=$RELEASE_REVISION
 LABEL org.opencontainers.image.revision=$RELEASE_REVISION
 
 EXPOSE 8000

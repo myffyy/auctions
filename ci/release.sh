@@ -51,3 +51,11 @@ docker image inspect "$image" --format '{{index .RepoDigests 0}}' > reports/publ
 mkdir -p "$root/reports/releases/$sha"
 cp -R reports/. "$root/reports/releases/$sha/"
 printf 'Published commit %s\n' "$sha"
+staging_ssh="$root/ci/.secrets/staging-ssh.conf"
+if [ ! -r "$staging_ssh" ]; then
+    echo "Staging SSH configuration missing" >&2
+    exit 1
+fi
+digest="$(cut -d @ -f 2 reports/published-digest.txt)"
+[[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+ssh -F "$staging_ssh" auctions-staging "deploy $sha $digest" 2>&1 | tee reports/staging.log
