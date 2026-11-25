@@ -151,7 +151,9 @@ def web_auctions(_: CurrentAccount, session: DbSession) -> list[Auction]:
 
 
 @router.get("/web/lots", response_model=list[LotRead])
-def web_lots(account: CurrentAccount, session: DbSession) -> list[Lot]:
+def web_lots(
+    account: CurrentAccount, session: DbSession, status: LotStatus | None = None
+) -> list[Lot]:
     statement = select(Lot).order_by(Lot.id)
     if account.role == AccountRole.USER and account.seller_id is not None:
         statement = statement.where(Lot.seller_id == account.seller_id)
@@ -159,6 +161,8 @@ def web_lots(account: CurrentAccount, session: DbSession) -> list[Lot]:
         statement = statement.where(Lot.status == "available")
     elif account.role == AccountRole.USER:
         statement = statement.where(Lot.id < 0)
+    if status is not None:
+        statement = statement.where(Lot.status == status)
     return list(session.scalars(statement).all())
 
 
