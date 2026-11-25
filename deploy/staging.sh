@@ -2,7 +2,7 @@
 set -euo pipefail
 umask 077
 cd /opt/auctions-lr6
-export DOCKER_CONFIG=/opt/auctions-lr6/registry-auth
+registry_config=/opt/auctions-lr6/registry-auth
 unset APP_IMAGE COMPOSE_FILE COMPOSE_PROJECT_NAME DOCKER_HOST DOCKER_CONTEXT
 repository=127.0.0.1:15001/auctions
 phase=arguments
@@ -40,13 +40,13 @@ export APP_IMAGE="$repository:$revision"
 
 phase=pull
 if [[ -z "$digest" ]]; then
-    docker pull "$APP_IMAGE"
+    docker --config "$registry_config" pull "$APP_IMAGE"
     references="$(docker image inspect "$APP_IMAGE" --format '{{range .RepoDigests}}{{println .}}{{end}}')"
     digest="$(awk -v prefix="$repository@" 'index($0, prefix)==1 {print substr($0,length(prefix)+1); exit}' <<< "$references")"
 fi
 [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
 export APP_IMAGE="$repository@$digest"
-docker pull "$APP_IMAGE"
+docker --config "$registry_config" pull "$APP_IMAGE"
 [[ "$(docker image inspect "$APP_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" == "$revision" ]]
 
 candidate="$revision $digest"
