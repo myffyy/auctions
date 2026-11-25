@@ -75,6 +75,11 @@ def test_create_get_and_list_lots(admin_client: TestClient) -> None:
     assert list_response.status_code == 200
     assert list_response.json() == [lot]
 
+    assert admin_client.get("/web/lots").json() == [lot]
+    assert admin_client.get("/web/lots", params={"status": "available"}).json() == [lot]
+    assert admin_client.get("/web/lots", params={"status": "sold"}).json() == []
+    assert admin_client.get("/web/lots", params={"status": "unknown"}).status_code == 422
+
 
 def test_reject_lot_with_unknown_auction(admin_client: TestClient) -> None:
     seller_id = create_seller(admin_client)
