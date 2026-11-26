@@ -4,39 +4,19 @@
 
 Цель — учебная VM `app-server` (ARM64), Compose-проект `auctions-lr6`. Интерфейс приложения слушает `127.0.0.1:18060`, PostgreSQL доступен только в сети проекта. С Mac открыть интерфейс можно через административный SSH-туннель.
 
-Администратор устанавливает `deploy/compose.yml`, `deploy/staging.sh`, `deploy/smoke.py` и `deploy/ssh-command.sh` в `/opt/auctions-lr6` с владельцем root. Каталог и код доступны на запись только root. Использовать содержимое проверенного коммита. Для `staging.env` взять за основу `.env.docker.example`, задать отдельные значения пароля PostgreSQL, пароля администратора и секрета сессии. Пароль PostgreSQL должен быть безопасен для подстановки в URL. Файлы с настройками и Docker credentials доступны только root.
+### Подготовка VM
 
-Учётной записи `auctions-deploy` выдаётся отдельный ключ, без доступа к Docker и без интерактивного входа. В `authorized_keys` задать `restrict,port-forwarding,permitlisten="127.0.0.1:15001",command="/opt/auctions-lr6/ssh-command.sh"`. В конфигурации sshd для этой учётной записи разрешить только remote TCP forwarding и адрес `127.0.0.1:15001`; проверить конфигурацию через `sshd -t` до перезагрузки. В отдельном файле sudoers, проверенном `visudo`, разрешить `auctions-deploy ALL=(root) NOPASSWD: /opt/auctions-lr6/staging.sh`. Forced command принимает только строго проверенные `deploy` и `rollback`.
+На VM выделенная учётная запись `auctions-deploy` запускает собственный [Docker Engine в режиме rootless](https://docs.docker.com/engine/security/rootless/). У неё нет доступа к системному сокету Docker. Для daemon нужны `uidmap`, диапазоны в `/etc/subuid` и `/etc/subgid`, пользовательский systemd с `loginctl enable-linger auctions-deploy` и сетевые зависимости rootless Docker. Для команд приёмки нужны Bash, Python 3, Docker Compose, `flock`, `nsenter`, `curl` и `socat`. Системный Docker, который обслуживает ЛР4, следует оставить запущенным. Установку rootless Docker рядом с системным Docker выполняют с `--force` по инструкции Docker.
 
-Для ручного запуска с Mac создать `ci/.secrets/staging-ssh.conf` с правами 0600:
+В `/home/auctions-deploy/staging` положить `compose.yml` из `deploy/compose.yml`, отдельный `staging.env` и `smoke.json` с логином и паролем тестового покупателя и идентификатором контрольного лота. В `registry-auth/config.json` хранится авторизация Docker для `127.0.0.1:15001`. Каталог принадлежит `auctions-deploy`, права каталога 0700, файлов с секретами 0600. Значения `staging.env` можно взять из существующего staging, если переносится его БД.
 
-```sshconfig
-Host auctions-staging
-    HostName 192.168.64.24
-    User auctions-deploy
-    IdentityFile /absolute/path/to/staging-key
-    UserKnownHostsFile /absolute/path/to/staging-known-hosts
-    IdentitiesOnly yes
-    StrictHostKeyChecking yes
-    BatchMode yes
-    ExitOnForwardFailure yes
-    RemoteForward 127.0.0.1:15001 127.0.0.1:5001
-```
+Для ключа Jenkins в `authorized_keys` использовать опции `restrict,port-forwarding`. В разделе `Match User auctions-deploy` задать `AuthenticationMethods publickey`, `AllowTcpForwarding no`, `AllowStreamLocalForwarding remote`, `PermitTTY no`, `X11Forwarding no` и `AllowAgentForwarding no`. При переходе убрать старый принудительный `command=` из ключа и прежнее разрешение sudo для обработчика доставки. Проверить `sshd -t` и перезагрузить конфигурацию SSH. Jenkins передаёт команды Bash в stdin своей SSH-сессии. Он открывает временный Unix-сокет до registry, а TCP-ретранслятор на `127.0.0.1:15001` работает только внутри сетевого пространства rootless daemon.
 
-Закрепить проверенный ключ VM. При открытом туннеле выполнить на VM от root `docker --config /opt/auctions-lr6/registry-auth login 127.0.0.1:15001 --password-stdin --username ci`, передав пароль из защищённого файла через stdin. Registry ЛР5 использует htpasswd с доступом на уровне сервиса.
-
-Первичное заполнение выполнить от администратора staging. Через открытый туннель скачать проверенный образ, выставить `APP_IMAGE` на ссылку по digest и из `/opt/auctions-lr6` выполнить `docker compose --env-file staging.env up -d --no-build --wait`. Через интерфейс создать аукцион, доступный лот и отдельную учётную запись покупателя. Записать её логин, пароль и числовой идентификатор контрольного лота в root-only `smoke.json` с полями `username`, `password` и `lot_id`. Затем выполнить штатный deploy того же SHA для первой записи приёмки.
+При переходе со старого staging сохраните логический дамп БД. После остановки только проекта `auctions-lr6` на старом daemon запустите PostgreSQL в rootless-проекте и восстановите дамп. Так сохранятся тестовый покупатель и контрольный лот из `smoke.json`. Скопировать `accepted` можно после проверки сохранённой базы и доступности обоих образов из registry. Старый том PostgreSQL оставьте до проверки новой трассы. Ниже автоматический выпуск и ручной откат идут через Jenkins.
 
 ## Выпуск и проверки
 
-После публикации Jenkins вызывает staging по SSH. Digest и результат HTTP-приёмки доступны в артефактах выпуска Jenkins. На VM файл `accepted` содержит две строки с текущей и предыдущей принятыми версиями. Файл `attempted` обозначает незавершённую приёмку после начала применения кандидата.
-
-Ручные операции выполняются с доверенного Mac:
-
-```bash
-ssh -F "$STAGING_SSH_CONFIG" auctions-staging "deploy $SHA"
-ssh -F "$STAGING_SSH_CONFIG" auctions-staging rollback
-```
+После публикации Jenkins вызывает staging по SSH. Команды настройки Docker, развёртывания и HTTP-приёмки определены непосредственно в `Jenkinsfile`. Digest и результат HTTP-приёмки доступны в артефактах выпуска Jenkins. На VM файл `accepted` содержит текущую и предыдущую принятые версии. Файл `attempted` обозначает незавершённую приёмку после начала применения кандидата.
 
 Для защиты использовать временные изменения конфигурации только в staging:
 
@@ -44,7 +24,7 @@ ssh -F "$STAGING_SSH_CONFIG" auctions-staging rollback
 | --- | --- |
 | Неверный тег | Передать отсутствующий SHA из 40 hex-символов. Ошибка на этапе pull. |
 | Отсутствующая настройка | Временно убрать `SESSION_SECRET` из `staging.env`. Ошибка на этапе configuration. |
-| Недоступный registry | Запустить команду через административный доступ на VM при закрытом туннеле. Ошибка на этапе pull. |
+| Недоступный registry | Сделать registry недоступным во время учебного прогона Jenkins. Ошибка на этапе pull. |
 | Неуспешный healthcheck | Временно изменить команду Docker healthcheck приложения на завершающуюся с ошибкой. Этап apply завершается с ошибкой. |
 | Сбой пользовательского сценария | Временно подставить неверный пароль покупателя в `smoke.json`. Контейнеры, HTTP health и версия проходят, этап http завершается с ошибкой. |
 | Возврат | Восстановить staging-конфигурацию и выполнить rollback. Приёмка должна подтвердить прежние SHA, digest и контрольный лот. |
@@ -63,4 +43,4 @@ ssh -F "$STAGING_SSH_CONFIG" auctions-staging rollback
 4. Создайте обычный Pipeline с именем `auctions-staging-release`. Definition → Pipeline script from SCM, Git URL `https://github.com/myffyy/auctions.git`, Branch Specifier `*/main`, Script Path `Jenkinsfile`. Включите Poll SCM с расписанием `H/5 * * * *`. Ограничьте право Configure заданием администратора контроллера выпуска.
 5. В окно переключения дождитесь окончания активного выпуска и остановите старый монитор командой `launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.auctions.lr5.release.plist"`. Переместите plist из `~/Library/LaunchAgents` в закрытый каталог, чтобы монитор не вернулся после входа в систему. Запустите первое задание Jenkins и проверьте стадии публикации и приёмки. Если переключение не прошло, отключите опрос в Jenkins и восстановите plist перед запуском прежнего монитора.
 
-Для запуска конкретного SHA используйте **Build with Parameters → deploy** и заполните `RELEASE_TAG`. Для отката выберите **rollback**. Плановые запуски используют **publish**. В Console Output видны результат публикации, вывод VM и строка `Accepted`; `reports/publish.log`, `reports/published-digest.txt` и `reports/staging.log` доступны в артефактах. VM сохраняет общую блокировку на все операции и проверяет релиз в рамках одного SSH-вызова.
+Для запуска конкретного SHA используйте **Build with Parameters → deploy** и заполните `RELEASE_TAG`. Для отката выберите **rollback**. Плановые запуски используют **publish**. В Console Output видны результат публикации, вывод VM и строка `Accepted`; `reports/publish.log`, `reports/published-digest.txt` и `reports/staging.log` доступны в артефактах. Стадия держит общую блокировку VM до окончания приёмки в рамках одного SSH-вызова.
