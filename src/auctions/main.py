@@ -1,5 +1,3 @@
-import os
-
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -52,11 +50,8 @@ def health() -> dict[str, str]:
 @app.middleware("http")
 async def add_instance_header(request: Request, call_next):
     """Идентификатор экземпляра приложения в ответе (доп. задание)."""
+    import os
+
     response = await call_next(request)
     response.headers["X-Instance"] = os.getenv("HOSTNAME", "unknown")
     return response
-
-
-@app.get("/version", tags=["service"])
-def version() -> dict[str, str]:
-    return {"revision": os.environ.get("RELEASE_REVISION", "development")}
