@@ -1,0 +1,12 @@
+name: auctions-jenkins-cd
+services:
+  jenkins:
+    build: ./jenkins
+    ports:
+      - "127.0.0.1:8082:8080"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+    restart: unless-stopped
+
+volumes:
+  jenkins-home:
